@@ -9,7 +9,7 @@ def generate():
 
         gjson[str(i)] = grid
 
-    wjson = {"grids":gjson, "curr_grid":"1", "player": [0,0], "inventory": ["Sword", "Shield", "Potion"]}
+    wjson = {"grids":gjson, "curr_grid":"1", "player": [0,0], "inventory": [["Sword",1], ["Shield",1], ["Potion",1]], "coins": 0}
 
     with open("grids.json", "w") as f:
         json.dump(wjson, f, indent=2)
