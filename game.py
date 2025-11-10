@@ -14,15 +14,24 @@ def add_coins(coins):
 def generate_item():
     chance = random.random()
     item = None
-    if 0 <= chance <= 0.15:
-        item = "Potion"
-    elif 0.15 < chance <= 0.555:
+    if 0 <= chance < 0.20:  # 20%
         item = "Wood"
-    elif 0.555 < chance <= 0.995:
+    elif 0.20 <= chance < 0.40:  # 20%
         item = "Iron"
-    elif 0.995 < chance <= 1:
+    elif 0.40 <= chance < 0.50:  # 10%
+        item = "Potion"
+    elif 0.50 <= chance < 0.55:  # 5%
+        item = "Sword"
+    elif 0.55 <= chance < 0.60:  # 5%
+        item = "Shield"
+    elif 0.60 <= chance < 0.601:  # 0.1%
         item = "Radon"
-
+    elif 0.7 <= chance < 0.85:
+        item = "Soil"
+    elif 0.89 <= chance < 0.895:
+        item = "Seed"
+    else:
+        item = ""
     return item
 
 def get_item():
@@ -124,7 +133,7 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
     prevx, prevy = -1, -1
     return x, y, prevx, prevy, grid_id, grid, grid_size, gamefile
 
-def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, cleared=False, got_item=None):
+def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, cleared=False, got_item=None, equipped=""):
     if cleared == True:
         stdscr.clear()
     if prevx >= 0 and prevy >= 0:
@@ -139,11 +148,12 @@ def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, f
             stdscr.addstr(i+1,j+1,grid[i][j])
     stdscr.addstr(grid_size[1]+3,0,f"Grid: {((int(grid_id)-1)%5)+1}, {math.floor((int(grid_id)-1)/5)+1}")
     stdscr.addstr(grid_size[1]+4,0,f"Coins: {coins}")
-    stdscr.addstr(grid_size[1]+7,0,"wasd/arrows:move | q:quit | i:inventory")
+    stdscr.addstr(grid_size[1]+5,0,f"Equipped: {equipped}")
+    stdscr.addstr(grid_size[1]+8,0,"wasd/arrows:move | q:quit | i:inventory")
     if forge["state"] == "Discovered":
-        stdscr.addstr(grid_size[1]+5,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
+        stdscr.addstr(grid_size[1]+6,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
     if got_item:
-        stdscr.addstr(grid_size[1]+8,0,f"{got_item} has been acquired!")
+        stdscr.addstr(grid_size[1]+9,0,f"{got_item} has been acquired!")
     stdscr.refresh()
 
 def main(stdscr):
@@ -155,6 +165,7 @@ def main(stdscr):
     grid_size = [len(gamefile["grids"][grid_id][0]), len(gamefile["grids"][grid_id])]
     grid = gamefile["grids"][grid_id]
     inv = gamefile["inventory"]
+    essentials = gamefile["essentials"]
 
     curses.noecho()
     curses.cbreak()
@@ -163,9 +174,11 @@ def main(stdscr):
     x,y = gamefile["player"]
     coins = gamefile["coins"]
     forge = gamefile["forge"]
+    equipped = gamefile["equipped"]
     prevx, prevy = -1,-1
-    update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge)
+    update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, equipped=equipped)
     item = None
+    ec = 0
 
     while True:
         clear_grid = False
@@ -203,8 +216,21 @@ def main(stdscr):
 
         # Inventory Menu
         elif key == ord('i'):
-            inventory(stdscr, inv)
+            resp = inventory(stdscr, inv, essentials)
+            if resp != None:
+                if type(resp) == list:
+                    essentials = resp
+                else:
+                    equipped, _ = resp
             clear_grid = True
+        elif key == ord('j'):
+            ec+=1
+            if ec > len(essentials)-1: ec = len(essentials)-1
+            equipped = essentials[ec]
+        elif key == ord('k'):
+            ec-=1
+            if ec < 0: ec = 0
+            equipped = essentials[ec]
 
         # Exit
         elif key == ord('q'):
@@ -214,6 +240,8 @@ def main(stdscr):
             gamefile["inventory"] = inv
             gamefile["coins"] = coins
             gamefile["forge"] = forge
+            gamefile["equipped"] = equipped
+            gamefile["essentials"] = essentials
             with open("grids.json", "w") as f:
                 json.dump(gamefile, f)
             sys.exit(0)
@@ -223,14 +251,42 @@ def main(stdscr):
             clear_grid = True
         elif grid[y][x] == "?":
             item = get_item()
-            inv = add_to_inv(item, inv)
-            clear_grid = True
+            if item != "":
+                inv = add_to_inv(item, inv)
+                clear_grid = True
+            else:
+                item = None
+        elif (key == curses.KEY_ENTER or key == ord('\n') or key == ord('\r')) and (equipped == "Pickaxe"):
+            soilprob = random.random()
+            if 0.9 <= soilprob < 0.905:
+                item = "Soil"
+                inv = add_to_inv("Soil", inv, random.randint(3,10))
+            elif 0.5 <= soilprob < 0.501:
+                item = "Seed"
+                inv = add_to_inv("Seed", inv, random.randint(3,10))
+            else:
+                item = None
+                clear_grid = True
+        elif grid[y][x] == "T":
+            if equipped == "Axe":
+                inv = add_to_inv("Wood", inv, random.randint(2,10))
+                item = "Wood"
+                grid[y][x] = " "
+            x = prevx
+            y = prevy
+        elif grid[y][x] == "*":
+            if equipped == "Pickaxe":
+                inv = add_to_inv("Iron", inv, random.randint(2,10))
+                item = "Iron"
+                grid[y][x] = " "
+            x = prevx
+            y = prevy
         elif grid[y][x] == "F":
             x = prevx
             y = prevy
             inv, coins = start_forge(stdscr, inv, coins)
             clear_grid = True
-        update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, cleared=clear_grid, got_item=item)
+        update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, cleared=clear_grid, got_item=item, equipped=equipped)
         if item:
             item = None
 

@@ -23,11 +23,51 @@ def generate():
             forge["loc"] = str(i)
             flag = True
         
+        # Add trees (T) based on grid number
+        if i <= 10:  # First 10 grids: sparse (3-5 trees)
+            num_trees = random.randint(3, 5)
+        elif i <= 15:  # Next 5 grids: kinda dense (8-15 trees)
+            num_trees = random.randint(8, 15)
+        else:  # Final 5 grids: dense (16-25 trees)
+            num_trees = random.randint(16, 25)
+        
+        for _ in range(num_trees):
+            attempts = 0
+            while attempts < 100:  # Prevent infinite loops
+                if grid_size[0] <= 2 or grid_size[1] <= 2:  # Safety check
+                    break
+                x = random.randint(1, grid_size[0] - 2)  # Avoid borders
+                y = random.randint(1, grid_size[1] - 2)  # Avoid borders
+                if grid[y][x] == ' ':  # Only place if cell is empty
+                    grid[y][x] = 'T'
+                    break
+                attempts += 1
+        
+        # Add ore (*) - dense in grids 7, 8, 12, 13, 14, sparse elsewhere
+        if i in [7, 8, 12, 13, 14]:  # Dense ore grids
+            num_ore = random.randint(16, 25)
+        else:  # Sparse ore grids
+            num_ore = random.randint(3, 5)
+        
+        for _ in range(num_ore):
+            attempts = 0
+            while attempts < 100:  # Prevent infinite loops
+                if grid_size[0] <= 2 or grid_size[1] <= 2:  # Safety check
+                    break
+                x = random.randint(1, grid_size[0] - 2)  # Avoid borders
+                y = random.randint(1, grid_size[1] - 2)  # Avoid borders
+                if grid[y][x] == ' ':  # Only place if cell is empty
+                    grid[y][x] = '*'
+                    break
+                attempts += 1
+        
         # Add scattered '?' symbols (around 20)
         num_question_marks = random.randint(18, 22)  # Around 20 ? symbols
         for _ in range(num_question_marks):
             attempts = 0
             while attempts < 100:  # Prevent infinite loops
+                if grid_size[0] <= 2 or grid_size[1] <= 2:  # Safety check
+                    break
                 x = random.randint(1, grid_size[0] - 2)  # Avoid borders
                 y = random.randint(1, grid_size[1] - 2)  # Avoid borders
                 if grid[y][x] == ' ':  # Only place if cell is empty
@@ -52,9 +92,13 @@ def generate():
             # Ensure we have a reasonable bunch size
             min_bunch = max(1, remaining_o // remaining_bunches - 3)
             max_bunch = min(15, remaining_o + 5)
+            if min_bunch > max_bunch:  # Safety check
+                min_bunch = max_bunch
             bunch_size = random.randint(min_bunch, max_bunch)
             
             # Choose center position (avoiding borders)
+            if grid_size[0] <= 4 or grid_size[1] <= 4:  # Safety check for center positioning
+                continue
             center_x = random.randint(2, grid_size[0] - 3)
             center_y = random.randint(2, grid_size[1] - 3)
             
@@ -81,7 +125,7 @@ def generate():
         
         gjson[str(i)] = grid
     
-    wjson = {"grids": gjson, "curr_grid": "1", "player": [0, 0], "inventory": [], "coins": 0, "forge":forge}
+    wjson = {"grids": gjson, "curr_grid": "1", "player": [0, 0], "inventory": [], "coins": 0, "forge":forge, "equipped": "", "essentials": []}
     with open("grids.json", "w") as f:
         json.dump(wjson, f, indent=2)
     print("Generated world")

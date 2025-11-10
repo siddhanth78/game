@@ -1,17 +1,18 @@
 import curses
-from inventory import inventory, add_to_inv
+from inventory import add_to_inv
 from collections import defaultdict
 
-all_merge = ["0. Radon: 40 Wood | 40 Iron | 10 potion | 100 coins",
-             "1. Sword: 5 Wood | 5 Iron | 10 coins",
-             "2. Shield: 5 Wood | 5 Iron | 10 coins",
-             "3. Axe: 5 Wood | 5 Iron | 10 coins",
+all_merge = [
+             "0. Sword: 5 Wood | 5 Iron | 10 coins",
+             "1. Shield: 5 Wood | 5 Iron | 10 coins",
+             "2. Axe: 5 Wood | 5 Iron | 10 coins",
+             "3. Pickaxe: 5 Wood | 5 Iron | 1 Axe | 10 coins",
              "4. Big Sword: 10 Wood | 10 Iron | 2 Sword | 20 coins",
              "5. Big Shield: 10 Wood | 10 Iron | 2 Shield | 20 coins",
              "6. Epic Sword: 30 Wood | 30 Iron | 5 Sword | 1 Big Sword | 1 Radon | 50 coins",
              "7. Epic Shield: 30 Wood | 30 Iron | 5 Shield | 1 Big Shield | 1 Radon | 50 coins",
-             "8. Godly Sword: 100 Wood | 100 Iron | 15 Sword | 3 Epic Sword | 5 Radon | 150 coins",
-             "9. Godly Shield: 100 Wood | 100 Iron | 15 Shield | 3 Epic Shield | 5 Radon | 150 coins"]
+             "8. Godly Sword: 100 Wood | 100 Iron | 15 Big Sword | 3 Epic Sword | 5 Radon | 150 coins",
+             "9. Godly Shield: 100 Wood | 100 Iron | 15 Big Shield | 3 Epic Shield | 5 Radon | 150 coins"]
 
 all_build = [
     "0. Wood mill: 30 Wood 10 Iron 20 coins",
@@ -58,21 +59,22 @@ def update_merge(stdscr, inv, coins, sel_len, selected_items, selected_items_qua
     gap3 = gap2 + 1 + sel_len + 1
     reqtext = " | ".join(f"{k}: {v}" for k,v in total_req.items()) + f" | Coins: {reqcoins}"
     stdscr.addstr(gap3, 0, reqtext)
-    stdscr.addstr(gap3 + 1, 0, "0-9:add item | d:delete item | m/n/right/left:increase/decrease | j/k/up/down:scroll | enter:purchase | q:exit")
-    stdscr.addstr(gap3 + 2, 0, status)
+    stdscr.addstr(gap3 + 2, 0, "0-9:add item | d:delete item | m/n/right/left:increase/decrease | j/k/up/down:scroll | enter:purchase | q:exit")
+    stdscr.addstr(gap3 + 3, 0, status)
 
 def check_purchase(selected_items, selected_items_quant, total_req, inv, reqcoins, coins):
     check_items = []
     if selected_items == []:
-        return "No items"
+        return "No items", inv, coins
     if reqcoins > coins:
-        return "Insufficient resources"
+        return "Insufficient resources", inv, coins
     for k,v in total_req.items():
         if v != 0:
             check_items.append(k)
     for i in inv:
-        if i[1] < total_req[i[0]]:
-            return "Insufficient resources"
+        if i[0] in total_req:
+            if i[1] < total_req[i[0]]:
+                return "Insufficient resources", inv, coins
     for k in check_items:
         for i in range(len(inv)):
             if k in inv[i]:
