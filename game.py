@@ -3,10 +3,8 @@ import sys
 import json
 import math
 import random
-
-def start_forge(inv, forge):
-
-    pass
+from inventory import add_to_inv, inventory
+from forge import start_forge
 
 
 def add_coins(coins):
@@ -18,15 +16,18 @@ def generate_item():
     item = None
     if 0 <= chance <= 0.1:
         item = "Potion"
-    elif 0.1 < chance <= 0.15:
-        item = "Sword"
-    elif 0.15 < chance <= 0.2:
+    elif 0.1 < chance <= 0.2:
+        if random.random() <= 0.5:
+            item = "Sword"
+        else:
+            item = "Shield"
+    elif 0.2 < chance <= 0.3:
         item = "Axe"
-    elif 0.2 < chance <= 0.65:
+    elif 0.3 < chance <= 0.75:
         item = "Wood"
-    elif 0.65 < chance <= 0.95:
+    elif 0.75 < chance <= 0.995:
         item = "Iron"
-    elif 0.95 < chance <= 1:
+    elif 0.995 < chance <= 1:
         item = "Radon"
 
     return item
@@ -34,50 +35,6 @@ def generate_item():
 def get_item():
     item = generate_item()
     return item
-
-def inventory(stdscr, inv):
-    stdscr.clear()
-    c = 0
-    inv_len = len(inv)
-    for i in range(inv_len):
-        if i == c:
-            inv_text = f"> {inv[i][0]}: {inv[i][1]}"
-        else:
-            inv_text = f"{inv[i][0]}: {inv[i][1]}"
-        stdscr.addstr(i, 0, inv_text)
-    stdscr.addstr(inv_len+1, 0, "j/k:scroll | i:exit")
-    while True:
-        key = stdscr.getch()
-
-        # Navigate
-        if key == ord('j'):
-            c -= 1
-            if c < 0: c = 0
-        elif key == ord('k'):
-            c += 1
-            if c > inv_len-1: c = inv_len-1
-       
-        # Exit inventory
-        elif key == ord('i'):
-            stdscr.clear()
-            break
-        
-        stdscr.clear()
-        for i in range(inv_len):
-            if i == c:
-                inv_text = f"> {inv[i][0]}: {inv[i][1]}"
-            else:
-                inv_text = f"{inv[i][0]}: {inv[i][1]}"
-            stdscr.addstr(i, 0, inv_text)
-        stdscr.addstr(inv_len+1, 0, "j/k:scroll | i:exit")
-
-def add_to_inv(item, inv):
-    for i in range(len(inv)):
-        if item in inv[i]:
-            inv[i][1] += 1
-            return inv
-    inv.append([item, 1])
-    return inv
 
 def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, forge):
     prevgridsize = [len(gamefile["grids"][grid_id][0]), len(gamefile["grids"][grid_id])]
@@ -189,7 +146,7 @@ def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, f
             stdscr.addstr(i+1,j+1,grid[i][j])
     stdscr.addstr(grid_size[1]+3,0,f"Grid: {((int(grid_id)-1)%5)+1}, {math.floor((int(grid_id)-1)/5)+1}")
     stdscr.addstr(grid_size[1]+4,0,f"Coins: {coins}")
-    stdscr.addstr(grid_size[1]+5,0,"wasd:move | q:quit | i:inventory")
+    stdscr.addstr(grid_size[1]+5,0,"wasd/arrows:move | q:quit | i:inventory")
     if forge["state"] == "Discovered":
         stdscr.addstr(grid_size[1]+6,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
     if got_item:
@@ -222,28 +179,28 @@ def main(stdscr):
         key = stdscr.getch()
         
         # Movement
-        if key == ord('w'):
+        if key == ord('w') or key == curses.KEY_UP:
             if y > 0:
                 prevx, prevy = x, y
                 y -= 1
             elif y <= 0:
                 x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, -1, x, y, prevx, prevy, grid_id, grid, gamefile, forge)
                 clear_grid = True
-        elif key == ord('s'):
+        elif key == ord('s') or key == curses.KEY_DOWN:
             if y < grid_size[1]-1:
                 prevx, prevy = x, y
                 y += 1
             elif y >= grid_size[1]-1:
                 x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, 1, x, y, prevx, prevy, grid_id, grid, gamefile, forge)
                 clear_grid = True
-        elif key == ord('a'):
+        elif key == ord('a') or key == curses.KEY_LEFT:
             if x > 0:
                 prevx, prevy =x, y
                 x -= 1
             elif x <= 0:
                 x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(-1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge)
                 clear_grid = True
-        elif key == ord('d'):
+        elif key == ord('d') or key == curses.KEY_RIGHT:
             if x < grid_size[0]-1:
                 prevx, prevy = x, y
                 x += 1
@@ -254,6 +211,7 @@ def main(stdscr):
         # Inventory Menu
         elif key == ord('i'):
             inventory(stdscr, inv)
+            clear_grid = True
 
         # Exit
         elif key == ord('q'):
@@ -277,6 +235,8 @@ def main(stdscr):
         elif grid[y][x] == "F":
             x = prevx
             y = prevy
+            inv, coins = start_forge(stdscr, inv, coins)
+            clear_grid = True
         update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, cleared=clear_grid, got_item=item)
         if item:
             item = None
