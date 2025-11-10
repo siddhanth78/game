@@ -14,18 +14,11 @@ def add_coins(coins):
 def generate_item():
     chance = random.random()
     item = None
-    if 0 <= chance <= 0.1:
+    if 0 <= chance <= 0.15:
         item = "Potion"
-    elif 0.1 < chance <= 0.2:
-        if random.random() <= 0.5:
-            item = "Sword"
-        else:
-            item = "Shield"
-    elif 0.2 < chance <= 0.3:
-        item = "Axe"
-    elif 0.3 < chance <= 0.75:
+    elif 0.15 < chance <= 0.65:
         item = "Wood"
-    elif 0.75 < chance <= 0.995:
+    elif 0.65 < chance <= 0.995:
         item = "Iron"
     elif 0.995 < chance <= 1:
         item = "Radon"
