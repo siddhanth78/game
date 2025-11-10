@@ -16,9 +16,9 @@ def generate_item():
     item = None
     if 0 <= chance <= 0.15:
         item = "Potion"
-    elif 0.15 < chance <= 0.65:
+    elif 0.15 < chance <= 0.555:
         item = "Wood"
-    elif 0.65 < chance <= 0.995:
+    elif 0.555 < chance <= 0.995:
         item = "Iron"
     elif 0.995 < chance <= 1:
         item = "Radon"
@@ -139,11 +139,11 @@ def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, f
             stdscr.addstr(i+1,j+1,grid[i][j])
     stdscr.addstr(grid_size[1]+3,0,f"Grid: {((int(grid_id)-1)%5)+1}, {math.floor((int(grid_id)-1)/5)+1}")
     stdscr.addstr(grid_size[1]+4,0,f"Coins: {coins}")
-    stdscr.addstr(grid_size[1]+5,0,"wasd/arrows:move | q:quit | i:inventory")
+    stdscr.addstr(grid_size[1]+7,0,"wasd/arrows:move | q:quit | i:inventory")
     if forge["state"] == "Discovered":
-        stdscr.addstr(grid_size[1]+6,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
+        stdscr.addstr(grid_size[1]+5,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
     if got_item:
-        stdscr.addstr(grid_size[1]+7,0,f"{got_item} has been acquired!")
+        stdscr.addstr(grid_size[1]+8,0,f"{got_item} has been acquired!")
     stdscr.refresh()
 
 def main(stdscr):

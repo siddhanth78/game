@@ -30,30 +30,81 @@ def update(stdscr, inv, inv_len, coins):
 def build_(stdscr, inv, inv_len, coins):
     return inv, coins
 
-def update_merge(stdscr, sel_len, selected_items, selected_items_quant, c):
+def update_merge(stdscr, inv, coins, sel_len, selected_items, selected_items_quant, c, total_req, reqcoins, status = ""):
     stdscr.clear()
+    
+    # First: Print all_merge
     for i in range(len(all_merge)):
         stdscr.addstr(i, 0, all_merge[i])
-    stdscr.addstr(len(all_merge)+1,0,"Selected:")
+
+    gap1 = len(all_merge) + 1
+    stdscr.addstr(gap1, 0, "Available items:")
+    inv_len = len(inv)
+    for i in range(inv_len):
+        inv_text = f"{inv[i][0]}: {inv[i][1]}"
+        stdscr.addstr(gap1 + 1 + i, 0, inv_text)
+    stdscr.addstr(gap1 + 1 + inv_len, 0, f"Coins: {coins}")
+
+    gap2 = gap1 + 1 + inv_len + 2
+    stdscr.addstr(gap2, 0, "Selected:")
     for i in range(sel_len):
         stext = f'{selected_items[i]}: {selected_items_quant[i]}'
         if i == c:
             sel_text = f"> {stext}"
         else:
             sel_text = f"{stext}"
-        stdscr.addstr(i+2+len(all_merge), 0, sel_text)
-    stdscr.addstr(sel_len+3+len(all_merge), 0, "0-9:add item | d:delete item | n/m:increase/decrease | j/k/up/down:scroll | enter:purchase | q:exit")
+        stdscr.addstr(gap2 + 1 + i, 0, sel_text)
 
-def get_merge_options(selected_items):
-    pass
+    gap3 = gap2 + 1 + sel_len + 1
+    reqtext = " | ".join(f"{k}: {v}" for k,v in total_req.items()) + f" | Coins: {reqcoins}"
+    stdscr.addstr(gap3, 0, reqtext)
+    stdscr.addstr(gap3 + 1, 0, "0-9:add item | d:delete item | m/n/right/left:increase/decrease | j/k/up/down:scroll | enter:purchase | q:exit")
+    stdscr.addstr(gap3 + 2, 0, status)
+
+def check_purchase(selected_items, selected_items_quant, total_req, inv, reqcoins, coins):
+    check_items = []
+    if selected_items == []:
+        return "No items"
+    if reqcoins > coins:
+        return "Insufficient resources"
+    for k,v in total_req.items():
+        if v != 0:
+            check_items.append(k)
+    for i in inv:
+        if i[1] < total_req[i[0]]:
+            return "Insufficient resources"
+    for k in check_items:
+        for i in range(len(inv)):
+            if k in inv[i]:
+                inv[i][1] -= total_req[inv[i][0]]
+                break
+    for s, sq in zip(selected_items, selected_items_quant):
+        s = s.strip()
+        inv = add_to_inv(s, inv, sq)
+    coins -= reqcoins
+    return "Purchased!", inv, coins
 
 def merge_items(stdscr, inv, coins):
     selected_items = []
     selected_items_quant = []
     c = 0
-    total_req = defaultdict(int)
-    update_merge(stdscr, len(selected_items), selected_items, selected_items_quant, c)
+    reqcoins = 0
+    total_req = {
+        "Wood": 0,
+        "Iron": 0,
+        "Potion": 0,
+        "Radon": 0,
+        "Sword": 0,
+        "Shield": 0,
+        "Axe": 0,
+        "Big Sword": 0,
+        "Big Shield": 0,
+        "Epic Sword": 0,
+        "Epic Shield": 0,
+    }
+    update_merge(stdscr, inv, coins, len(selected_items), selected_items, selected_items_quant, c, total_req, reqcoins)
     while True:
+        status = ""
         key = stdscr.getch()
 
         # Add/delete
@@ -72,12 +123,6 @@ def merge_items(stdscr, inv, coins):
                         total_req["Potion"] += int(sr.split(" ")[0])
                     elif "Radon" in sr:
                         total_req["Radon"] += int(sr.split(" ")[0])
-                    elif "Sword" in sr:
-                        total_req["Sword"] += int(sr.split(" ")[0])
-                    elif "Shield" in sr:
-                        total_req["Shield"] += int(sr.split(" ")[0])
-                    elif "Axe" in sr:
-                        total_req["Axe"] += int(sr.split(" ")[0])
                     elif "Big Sword" in sr:
                         total_req["Big Sword"] += int(sr.split(" ")[0])
                     elif "Big Shield" in sr:
@@ -86,10 +131,47 @@ def merge_items(stdscr, inv, coins):
                         total_req["Epic Sword"] += int(sr.split(" ")[0])
                     elif "Epic Shield" in sr:
                         total_req["Epic Shield"] += int(sr.split(" ")[0])
+                    elif "Sword" in sr:
+                        total_req["Sword"] += int(sr.split(" ")[0])
+                    elif "Shield" in sr:
+                        total_req["Shield"] += int(sr.split(" ")[0])
+                    elif "Axe" in sr:
+                        total_req["Axe"] += int(sr.split(" ")[0])
+                    elif "coins" in sr:
+                        reqcoins += int(sr.split(" ")[0])
 
         elif key == ord('d') and selected_items != []:
             deleted = selected_items.pop(c)
             del_q = selected_items_quant.pop(c)
+            for m in range(len(all_merge)):
+                if deleted in all_merge[m]:
+                    selreq = all_merge[m].split(":")[1].strip().split(" | ")
+                    break
+            for sr in selreq:
+                if "Wood" in sr:
+                    total_req["Wood"] -= int(sr.split(" ")[0])*del_q
+                elif "Iron" in sr:
+                    total_req["Iron"] -= int(sr.split(" ")[0])*del_q
+                elif "Potion" in sr:
+                    total_req["Potion"] -= int(sr.split(" ")[0])*del_q
+                elif "Radon" in sr:
+                    total_req["Radon"] -= int(sr.split(" ")[0])*del_q
+                elif "Big Sword" in sr:
+                    total_req["Big Sword"] -= int(sr.split(" ")[0])*del_q
+                elif "Big Shield" in sr:
+                    total_req["Big Shield"] -= int(sr.split(" ")[0])*del_q
+                elif "Epic Sword" in sr:
+                    total_req["Epic Sword"] -= int(sr.split(" ")[0])*del_q
+                elif "Epic Shield" in sr:
+                    total_req["Epic Shield"] -= int(sr.split(" ")[0])*del_q
+                elif "Sword" in sr:
+                    total_req["Sword"] -= int(sr.split(" ")[0])*del_q
+                elif "Shield" in sr:
+                    total_req["Shield"] -= int(sr.split(" ")[0])*del_q
+                elif "Axe" in sr:
+                    total_req["Axe"] -= int(sr.split(" ")[0])*del_q
+                elif "coins" in sr:
+                    reqcoins -= int(sr.split(" ")[0])*del_q
             if c >= len(selected_items):
                 c = len(selected_items)-1
         
@@ -102,37 +184,114 @@ def merge_items(stdscr, inv, coins):
             if c > len(selected_items)-1: c = len(selected_items)-1
 
         # Regulate
-        elif key == ord('n'):
+        elif (key == ord('m') or key == curses.KEY_RIGHT) and selected_items != []:
             selected_items_quant[c] += 1
-        elif key == ord('m'):
+            for m in range(len(all_merge)):
+                if selected_items[c] in all_merge[m]:
+                    selreq = all_merge[m].split(":")[1].strip().split(" | ")
+                    break
+            for sr in selreq:
+                if "Wood" in sr:
+                    total_req["Wood"] += int(sr.split(" ")[0])
+                elif "Iron" in sr:
+                    total_req["Iron"] += int(sr.split(" ")[0])
+                elif "Potion" in sr:
+                    total_req["Potion"] += int(sr.split(" ")[0])
+                elif "Radon" in sr:
+                    total_req["Radon"] += int(sr.split(" ")[0])
+                elif "Big Sword" in sr:
+                    total_req["Big Sword"] += int(sr.split(" ")[0])
+                elif "Big Shield" in sr:
+                    total_req["Big Shield"] += int(sr.split(" ")[0])
+                elif "Epic Sword" in sr:
+                    total_req["Epic Sword"] += int(sr.split(" ")[0])
+                elif "Epic Shield" in sr:
+                    total_req["Epic Shield"] += int(sr.split(" ")[0])
+                elif "Sword" in sr:
+                    total_req["Sword"] += int(sr.split(" ")[0])
+                elif "Shield" in sr:
+                    total_req["Shield"] += int(sr.split(" ")[0])
+                elif "Axe" in sr:
+                    total_req["Axe"] += int(sr.split(" ")[0])
+                elif "coins" in sr:
+                    reqcoins += int(sr.split(" ")[0])
+        elif (key == ord('n') or key == curses.KEY_LEFT) and selected_items != []:
+            flag = 0
             selected_items_quant[c] -= 1
             if selected_items_quant[c] < 1:
                 selected_items_quant[c] = 1
+                flag = 1
+            for m in range(len(all_merge)):
+                if selected_items[c] in all_merge[m]:
+                    selreq = all_merge[m].split(":")[1].strip().split(" | ")
+                    break
+            if flag == 0:
+                for sr in selreq:
+                    if "Wood" in sr:
+                        total_req["Wood"] -= int(sr.split(" ")[0])
+                    elif "Iron" in sr:
+                        total_req["Iron"] -= int(sr.split(" ")[0])
+                    elif "Potion" in sr:
+                        total_req["Potion"] -= int(sr.split(" ")[0])
+                    elif "Radon" in sr:
+                        total_req["Radon"] -= int(sr.split(" ")[0])
+                    elif "Big Sword" in sr:
+                        total_req["Big Sword"] -= int(sr.split(" ")[0])
+                    elif "Big Shield" in sr:
+                        total_req["Big Shield"] -= int(sr.split(" ")[0])
+                    elif "Epic Sword" in sr:
+                        total_req["Epic Sword"] -= int(sr.split(" ")[0])
+                    elif "Epic Shield" in sr:
+                        total_req["Epic Shield"] -= int(sr.split(" ")[0])
+                    elif "Sword" in sr:
+                        total_req["Sword"] -= int(sr.split(" ")[0])
+                    elif "Shield" in sr:
+                        total_req["Shield"] -= int(sr.split(" ")[0])
+                    elif "Axe" in sr:
+                        total_req["Axe"] -= int(sr.split(" ")[0])
+                    elif "coins" in sr:
+                        reqcoins += int(sr.split(" ")[0])
         
         # Select
         elif key == curses.KEY_ENTER or key == ord('\n') or key == ord('\r'):
-            options = get_merge_options(selected_items)
+            status, inv, coins = check_purchase(selected_items, selected_items_quant, total_req, inv, reqcoins, coins)
+            selected_items = []
+            selected_items_quant = []
+            c = 0
+            total_req = {
+                "Wood": 0,
+                "Iron": 0,
+                "Potion": 0,
+                "Radon": 0,
+                "Sword": 0,
+                "Shield": 0,
+                "Axe": 0,
+                "Big Sword": 0,
+                "Big Shield": 0,
+                "Epic Sword": 0,
+                "Epic Shield": 0,
+            }
+            reqcoins = 0
 
         # Exit
         elif key == ord('q'):
             return inv, coins
         
-        update_merge(stdscr, len(selected_items), selected_items, selected_items_quant, c)
+        update_merge(stdscr, inv, coins, len(selected_items), selected_items, selected_items_quant, c, total_req, reqcoins, status)
 
 def run_forge(stdscr, inv, coins):
-    inv_len = len(inv)
-    update(stdscr, inv, inv_len, coins)
+    update(stdscr, inv, len(inv), coins)
     while True:
         key = stdscr.getch()
 
         if key == ord('q'):
             return inv, coins
         elif key == ord('b'):
-            inv, coins = build_(stdscr, inv, inv_len, coins)
+            inv, coins = build_(stdscr, inv, len(inv), coins)
         elif key == ord('a'):
             inv, coins = merge_items(stdscr, inv, coins)
 
-        update(stdscr, inv, inv_len, coins)
+        update(stdscr, inv, len(inv), coins)
 
 
 def start_forge(stdscr, inv, coins):

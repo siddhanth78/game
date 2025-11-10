@@ -35,10 +35,10 @@ def inventory(stdscr, inv):
 
         update_inv(stdscr, inv, inv_len, c)
 
-def add_to_inv(item, inv):
+def add_to_inv(item, inv, add_=1):
     for i in range(len(inv)):
         if item in inv[i]:
-            inv[i][1] += 1
+            inv[i][1] += add_
             return inv
-    inv.append([item, 1])
+    inv.append([item, add_])
     return inv
