@@ -30,8 +30,7 @@ def inventory(stdscr, inv, essentials):
             if c > inv_len-1: c = inv_len-1
 
         elif key == ord('e'):
-            if len(essentials) < 3:
-                add_to_essentials(essentials, inv, c)
+            add_to_essentials(essentials, inv, c)
 
         elif key == curses.KEY_ENTER or key == ord('\n') or key == ord('\r'):
             return inv[c][0], inv[c][1]

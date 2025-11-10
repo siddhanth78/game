@@ -125,7 +125,9 @@ def generate():
         
         gjson[str(i)] = grid
     
-    wjson = {"grids": gjson, "curr_grid": "1", "player": [0, 0], "inventory": [], "coins": 0, "forge":forge, "equipped": "", "essentials": []}
+    wjson = {"grids": gjson, "curr_grid": "1", "player": [0, 0],
+             "inventory": [["Mill lot", 1], ["Big mill lot", 1], ["Wood mill", 1], ["Iron mill", 1]], "coins": 0,
+             "forge":forge, "equipped": "", "essentials": [], "mills": {}}
     with open("grids.json", "w") as f:
         json.dump(wjson, f, indent=2)
     print("Generated world")

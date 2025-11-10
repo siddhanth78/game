@@ -1,6 +1,5 @@
 import curses
 from inventory import add_to_inv
-from collections import defaultdict
 
 all_merge = [
              "0. Sword: 5 Wood | 5 Iron | 10 coins",
@@ -15,8 +14,10 @@ all_merge = [
              "9. Godly Shield: 100 Wood | 100 Iron | 15 Big Shield | 3 Epic Shield | 5 Radon | 150 coins"]
 
 all_build = [
-    "0. Wood mill: 30 Wood 10 Iron 20 coins",
-    "1. Iron mill: 30 Iron 10 Wood 20 coins",
+    "0. Wood mill: 30 Wood | 10 Iron | 20 coins",
+    "1. Iron mill: 30 Iron | 10 Wood | 20 coins",
+    "2. Mill lot: 20 Wood | 20 Iron | 50 coins",
+    "3. Big mill lot: 30 Wood | 30 Iron | 100 coins"
 ]
 
 def update(stdscr, inv, inv_len, coins):
@@ -28,17 +29,14 @@ def update(stdscr, inv, inv_len, coins):
     stdscr.addstr(inv_len+1, 0, f"Coins: {coins}")
     stdscr.addstr(inv_len+3, 0, "a:armory | b:build | q:exit")
 
-def build_(stdscr, inv, inv_len, coins):
-    return inv, coins
-
-def update_merge(stdscr, inv, coins, sel_len, selected_items, selected_items_quant, c, total_req, reqcoins, status = ""):
+def update_merge(stdscr, inv, coins, sel_len, selected_items, selected_items_quant, c, total_req, reqcoins, catalogue, status = ""):
     stdscr.clear()
     
-    # First: Print all_merge
-    for i in range(len(all_merge)):
-        stdscr.addstr(i, 0, all_merge[i])
+    # First: Print catalogue
+    for i in range(len(catalogue)):
+        stdscr.addstr(i, 0, catalogue[i])
 
-    gap1 = len(all_merge) + 1
+    gap1 = len(catalogue) + 1
     stdscr.addstr(gap1, 0, "Available items:")
     inv_len = len(inv)
     for i in range(inv_len):
@@ -77,16 +75,17 @@ def check_purchase(selected_items, selected_items_quant, total_req, inv, reqcoin
                 return "Insufficient resources", inv, coins
     for k in check_items:
         for i in range(len(inv)):
-            if k in inv[i]:
+            if k == inv[i][0]:
                 inv[i][1] -= total_req[inv[i][0]]
                 break
+    inv = [i for i in inv if i[1]>0]
     for s, sq in zip(selected_items, selected_items_quant):
         s = s.strip()
         inv = add_to_inv(s, inv, sq)
     coins -= reqcoins
     return "Purchased!", inv, coins
 
-def merge_items(stdscr, inv, coins):
+def merge_items(stdscr, inv, coins, catalogue):
     selected_items = []
     selected_items_quant = []
     c = 0
@@ -104,15 +103,17 @@ def merge_items(stdscr, inv, coins):
         "Epic Sword": 0,
         "Epic Shield": 0,
     }
-    update_merge(stdscr, inv, coins, len(selected_items), selected_items, selected_items_quant, c, total_req, reqcoins)
+    update_merge(stdscr, inv, coins, len(selected_items), selected_items, selected_items_quant, c, total_req, reqcoins, catalogue)
     while True:
         status = ""
         key = stdscr.getch()
 
         # Add/delete
         if key >= ord('0') and key <= ord('9'):
-            sitem = all_merge[int(chr(key))].split(":")[0].split(".")[1]
-            sreq = all_merge[int(chr(key))].split(":")[1].strip().split(" | ")
+            if int(chr(key)) > len(catalogue)-1:
+                continue
+            sitem = catalogue[int(chr(key))].split(":")[0].split(".")[1]
+            sreq = catalogue[int(chr(key))].split(":")[1].strip().split(" | ")
             if sitem not in selected_items:
                 selected_items.append(sitem)
                 selected_items_quant.append(1)
@@ -145,9 +146,9 @@ def merge_items(stdscr, inv, coins):
         elif key == ord('d') and selected_items != []:
             deleted = selected_items.pop(c)
             del_q = selected_items_quant.pop(c)
-            for m in range(len(all_merge)):
-                if deleted in all_merge[m]:
-                    selreq = all_merge[m].split(":")[1].strip().split(" | ")
+            for m in range(len(catalogue)):
+                if deleted in catalogue[m]:
+                    selreq = catalogue[m].split(":")[1].strip().split(" | ")
                     break
             for sr in selreq:
                 if "Wood" in sr:
@@ -188,9 +189,9 @@ def merge_items(stdscr, inv, coins):
         # Regulate
         elif (key == ord('m') or key == curses.KEY_RIGHT) and selected_items != []:
             selected_items_quant[c] += 1
-            for m in range(len(all_merge)):
-                if selected_items[c] in all_merge[m]:
-                    selreq = all_merge[m].split(":")[1].strip().split(" | ")
+            for m in range(len(catalogue)):
+                if selected_items[c] in catalogue[m]:
+                    selreq = catalogue[m].split(":")[1].strip().split(" | ")
                     break
             for sr in selreq:
                 if "Wood" in sr:
@@ -223,9 +224,9 @@ def merge_items(stdscr, inv, coins):
             if selected_items_quant[c] < 1:
                 selected_items_quant[c] = 1
                 flag = 1
-            for m in range(len(all_merge)):
-                if selected_items[c] in all_merge[m]:
-                    selreq = all_merge[m].split(":")[1].strip().split(" | ")
+            for m in range(len(catalogue)):
+                if selected_items[c] in catalogue[m]:
+                    selreq = catalogue[m].split(":")[1].strip().split(" | ")
                     break
             if flag == 0:
                 for sr in selreq:
@@ -252,7 +253,7 @@ def merge_items(stdscr, inv, coins):
                     elif "Axe" in sr:
                         total_req["Axe"] -= int(sr.split(" ")[0])
                     elif "coins" in sr:
-                        reqcoins += int(sr.split(" ")[0])
+                        reqcoins -= int(sr.split(" ")[0])
         
         # Select
         elif key == curses.KEY_ENTER or key == ord('\n') or key == ord('\r'):
@@ -279,7 +280,7 @@ def merge_items(stdscr, inv, coins):
         elif key == ord('q'):
             return inv, coins
         
-        update_merge(stdscr, inv, coins, len(selected_items), selected_items, selected_items_quant, c, total_req, reqcoins, status)
+        update_merge(stdscr, inv, coins, len(selected_items), selected_items, selected_items_quant, c, total_req, reqcoins, catalogue, status)
 
 def run_forge(stdscr, inv, coins):
     update(stdscr, inv, len(inv), coins)
@@ -289,9 +290,9 @@ def run_forge(stdscr, inv, coins):
         if key == ord('q'):
             return inv, coins
         elif key == ord('b'):
-            inv, coins = build_(stdscr, inv, len(inv), coins)
+            inv, coins = merge_items(stdscr, inv, coins, all_build)
         elif key == ord('a'):
-            inv, coins = merge_items(stdscr, inv, coins)
+            inv, coins = merge_items(stdscr, inv, coins, all_merge)
 
         update(stdscr, inv, len(inv), coins)
 
