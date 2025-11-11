@@ -90,6 +90,10 @@ def run_mill(stdscr, inv, coins, curr_mill):
             return inv, coins, curr_mill
         
         elif key == curses.KEY_ENTER or key == ord('\n') or key == ord('\r'):
+            grid[y][x] = ' '
+            x,y = 0,0
+            prevx, prevy = -1,-1
+            grid[y][x] = '0'
             all_mills, inv, grid =  place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills)
             clear_grid = True
 
@@ -113,8 +117,9 @@ def start_mill(stdscr, inv, coins, curr_mill):
         pass
     return inv, coins, curr_mill
 
-def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
+def find_empty(grid, grid_size):
     flag = 0
+    x,y = None, None
     for i in range(2, grid_size[1]-2):
         for j in range(2, grid_size[0]-2):
             if grid[i][j] == " ":
@@ -123,6 +128,12 @@ def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
                 break
         if flag == 1:
             break
+    return x,y
+
+def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
+    x,y = find_empty(grid, grid_size)
+    if x == None:
+        return all_mills, inv, grid
     prevx, prevy = -1,-1
     update_place_mill_screen(stdscr, x, y, prevx, prevy, grid, grid_size, all_mills)
     while True:
@@ -163,6 +174,12 @@ def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
                     all_mills.append(["Wood mill", x, y])
                     break
             inv = [i for i in inv if i[1] > 0]
+            finalx, finaly = x,y
+            x,y = find_empty(grid, grid_size)
+            if x == None:
+                grid[finaly][finalx] = " "
+                return all_mills, inv, grid
+            prevx, prevy = -1,-1
         elif key == ord('m'):
             for i in inv:
                 if "Iron mill" in i:
@@ -171,7 +188,12 @@ def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
                     all_mills.append(["Iron mill", x, y])
                     break
             inv = [i for i in inv if i[1] > 0]
-            
+            finalx, finaly = x,y
+            x,y = find_empty(grid, grid_size)
+            if x == None:
+                grid[finaly][finalx] = " "
+                return all_mills, inv, grid
+            prevx, prevy = -1,-1
         
         if grid[y][x] == "W":
             x = prevx
