@@ -91,56 +91,56 @@ def run_mill(stdscr, inv, coins, curr_mill):
                 prevx, prevy = x, y
                 x += 1
         elif key == ord('j'):
-            fuel_req = len(all_mills)*10
+            fuel_req = len(all_mills)*5
             wm = 0
             im = 0
             check = 0
-            for i in range(len(inv)):
-                if inv[i][0] == "Fuel":
-                    if inv[i][1] >= fuel_req:
-                        inv[i][1] -= fuel_req
-                        status = "Fueled! Wood/Iron has been acquired!"
-                        check = 1
-                        break
+            if all_mills == []:
+                status = "No mills found"
+            else:
+                for i in range(len(inv)):
+                    if inv[i][0] == "Fuel":
+                        if inv[i][1] >= fuel_req:
+                            inv[i][1] -= fuel_req
+                            status = "Fueled! Wood/Iron has been acquired!"
+                            check = 1
+                            break
             if check == 1:
-                if all_mills == []:
-                    status = "No mills found"
-                else:
-                    for a in all_mills:
-                        if a[0] == "Wood mill":
-                            wm += 1
-                        elif a[0] == "Iron mill":
-                            im += 1
-                    inv = add_to_inv("Wood", inv, wm*10)
-                    inv = add_to_inv("Iron", inv, im*10)
-                    inv = [i for i in inv if i[1] > 0]
+                for a in all_mills:
+                    if a[0] == "Wood mill":
+                        wm += 1
+                    elif a[0] == "Iron mill":
+                        im += 1
+                inv = add_to_inv("Wood", inv, wm*10)
+                inv = add_to_inv("Iron", inv, im*10)
+                inv = [i for i in inv if i[1] > 0]
             else:
                 status = "Insufficient resources"
             clear_grid = True
         elif key == ord('k'):
-            ss_req = len(all_mills)
+            ss_req = math.ceil(len(all_mills)/2)
             wm = 0
             im = 0
             check = 0
-            for i in range(len(inv)):
-                if inv[i][0] == "Super Seed":
-                    if inv[i][1] >= ss_req:
-                        inv[i][1] -= ss_req
-                        status = "SUPER-SEEDED! Wood/Iron has been acquired!"
-                        check = 1
-                        break
+            if all_mills == []:
+                status = "No mills found"
+            else:
+                for i in range(len(inv)):
+                    if inv[i][0] == "Super Seed":
+                        if inv[i][1] >= ss_req:
+                            inv[i][1] -= ss_req
+                            status = "SUPER-SEEDED! Wood/Iron has been acquired!"
+                            check = 1
+                            break
             if check == 1:
-                if all_mills == []:
-                    status = "No mills found"
-                else:
-                    for a in all_mills:
-                        if a[0] == "Wood mill":
-                            wm += 1
-                        elif a[0] == "Iron mill":
-                            im += 1
-                    inv = add_to_inv("Wood", inv, wm*50)
-                    inv = add_to_inv("Iron", inv, im*50)
-                    inv = [i for i in inv if i[1] > 0]
+                for a in all_mills:
+                    if a[0] == "Wood mill":
+                        wm += 1
+                    elif a[0] == "Iron mill":
+                        im += 1
+                inv = add_to_inv("Wood", inv, wm*50)
+                inv = add_to_inv("Iron", inv, im*50)
+                inv = [i for i in inv if i[1] > 0]
             else:
                 status = "Insufficient resources"
             clear_grid = True

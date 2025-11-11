@@ -1,5 +1,6 @@
 import curses
 from inventory import add_to_inv
+import math
 
 all_merge = [
              "0. Sword: 20 Wood | 20 Iron | 50 coins",
@@ -12,9 +13,9 @@ all_merge = [
              "7. Godly Shield: 1000 Wood | 1000 Iron | 15 Big Shield | 3 Epic Shield | 5 Radon | 1500 coins"]
 
 all_build = [
-    "0. Wood mill: 300 Wood | 100 Iron | 200 coins",
-    "1. Iron mill: 300 Iron | 100 Wood | 200 coins",
-    "2. Mill lot: 200 Wood | 200 Iron | 500 coins",
+    "0. Wood mill: 50 Wood | 20 Iron | 200 coins",
+    "1. Iron mill: 20 Wood | 50 Iron | 200 coins",
+    "2. Mill lot: 100 Wood | 100 Iron | 500 coins",
     "3. Big mill lot: 300 Wood | 300 Iron | 1000 coins"
 ]
 
