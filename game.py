@@ -24,7 +24,7 @@ def get_item():
         item = "Sword"
     elif 0.55 <= chance < 0.60:
         item = "Shield"
-    elif 0.60 <= chance < 0.61:
+    elif 0.60 <= chance < 0.605:
         item = "Radon"
     elif 0.7 <= chance < 0.85:
         item = "Fuel"
