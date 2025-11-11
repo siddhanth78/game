@@ -11,7 +11,7 @@ def add_coins(coins):
     coins += 10
     return coins
 
-def generate_item():
+def get_item():
     chance = random.random()
     item = None
     if 0 <= chance < 0.20:
@@ -32,10 +32,6 @@ def generate_item():
         item = "Super Seed"
     else:
         item = ""
-    return item
-
-def get_item():
-    item = generate_item()
     return item
 
 def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, forge):
@@ -258,7 +254,11 @@ def main(stdscr):
         elif grid[y][x] == "?":
             item = get_item()
             if item != "":
-                inv = add_to_inv(item, inv)
+                if item in ["Wood", "Iron"]:
+                    add_ = random.randint(2,5)
+                else:
+                    add_ = 1
+                inv = add_to_inv(item, inv, add_)
                 clear_grid = True
             else:
                 item = None
