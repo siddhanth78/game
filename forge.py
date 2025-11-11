@@ -23,9 +23,11 @@ all_build = [
 def update(stdscr, inv, inv_len, coins):
     stdscr.clear()
     stdscr.addstr(0,0,"Available items:")
-    for i in range(inv_len):
-        inv_text = f"{inv[i][0]}: {inv[i][1]}"
-        stdscr.addstr(i+1, 0, inv_text)
+    j = 0
+    for i in inv:
+        inv_text = f"{i}: {inv[i]}"
+        stdscr.addstr(j+1, 0, inv_text)
+        j += 1
     stdscr.addstr(inv_len+1, 0, f"Coins: {coins}")
     stdscr.addstr(inv_len+3, 0, "a:armory | b:build | q:exit")
 
@@ -39,9 +41,11 @@ def update_merge(stdscr, inv, coins, sel_len, selected_items, selected_items_qua
     gap1 = len(catalogue) + 1
     stdscr.addstr(gap1, 0, "Available items:")
     inv_len = len(inv)
-    for i in range(inv_len):
-        inv_text = f"{inv[i][0]}: {inv[i][1]}"
-        stdscr.addstr(gap1 + 1 + i, 0, inv_text)
+    j = 0
+    for i in inv:
+        inv_text = f"{i}: {inv[i]}"
+        stdscr.addstr(j+1+gap1, 0, inv_text)
+        j += 1
     stdscr.addstr(gap1 + 1 + inv_len, 0, f"Coins: {coins}")
 
     gap2 = gap1 + 1 + inv_len + 2
@@ -70,15 +74,13 @@ def check_purchase(selected_items, selected_items_quant, total_req, inv, reqcoin
         if v != 0:
             check_items.append(k)
     for i in inv:
-        if i[0] in total_req:
-            if i[1] < total_req[i[0]]:
+        if i in total_req:
+            if inv[i] < total_req[i]:
                 return "Insufficient resources", inv, coins
     for k in check_items:
-        for i in range(len(inv)):
-            if k == inv[i][0]:
-                inv[i][1] -= total_req[inv[i][0]]
-                break
-    inv = [i for i in inv if i[1]>0]
+        inv[k] -= total_req[k]
+        if inv[k] <= 0:
+            del inv[k]
     for s, sq in zip(selected_items, selected_items_quant):
         s = s.strip()
         inv = add_to_inv(s, inv, sq)

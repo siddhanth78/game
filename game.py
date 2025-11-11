@@ -66,7 +66,7 @@ def spawn_enemies_in_grid(grid, enemy_level, existing_enemies, max_enemies=4):
     if len(existing_enemies) > 0:
         return spawned_enemies
 
-    if random.random() < 0.60:
+    if random.random() < 0.80:
         rows, cols = len(grid), len(grid[0])
         num_enemies = random.randint(1, max_enemies)
         
@@ -136,8 +136,16 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
         forge["gridy"] = math.floor((int(grid_id)-1)/5)+1
         forge["state"] = "Discovered"
 
-    # Spawn new enemies in the new grid (30% chance)
-    enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+    grid_num = int(grid_id)
+    if grid_num <= 5:
+        enemy_level = 1
+    elif grid_num <= 10:
+        enemy_level = random.randint(2, 3)
+    elif grid_num <= 15:
+        enemy_level = random.randint(4, 7)
+    else:
+        enemy_level = random.randint(8, 15)
+
     new_enemies = spawn_enemies_in_grid(grid, enemy_level, enemies[grid_id])
     enemies[grid_id].extend(new_enemies)
 
@@ -592,27 +600,23 @@ def main(stdscr):
                     clear_grid = True
             elif equipped == "Mill lot" or equipped == "Big mill lot" or equipped == "Fuel Dispenser":
                 mills, inv, grid = place_mill(stdscr, equipped, mills, grid_id, grid, grid_size, inv)
-                essentials = [e for e in essentials for i in inv if e in i]
-                equipped = ""
+                essentials = [e for e in essentials if e in inv]
+                if equipped not in inv:
+                    equipped = ""
                 clear_grid = True
             elif equipped == "Potion":
-                for i in range(len(inv)):
-                    if inv[i][0] == "Potion":
-                        inv[i][1] -= 1
-                        player.health += 10
-                        if player.health > 300:
-                            player.health = 300
-                        if inv[i][1] <= 0:
-                            equipped = ""
-                essentials = [e for e in essentials for i in inv if e in i]
-                inv = [i for i in inv if i[1] > 0]
+                inv["Potion"] -= 1
+                player.health += 10
+                if player.health > 300:
+                    player.health = 300
+                if inv["Potion"] <= 0:
+                    del inv["Potion"]
+                    equipped = ""
+                essentials = [e for e in essentials if e in inv]
                 clear_grid = True
         elif grid[y][x] == "D":
             coins -= 15
-            for i in range(len(inv)):
-                if inv[i][0] == "Fuel":
-                    inv[i][1] += 1
-                    break
+            inv["Fuel"] += 1
             x = prevx
             y = prevy
             item = "Fuel"
@@ -636,7 +640,7 @@ def main(stdscr):
             x = prevx
             y = prevy
             inv, coins, curr_mill = start_mill(stdscr, inv, coins, curr_mill)
-            essentials = [e for e in essentials for i in inv if e in i]
+            essentials = [e for e in essentials if e in inv]
             mills[f"mill_{grid_id}_{x}_{y}"] = curr_mill
             curr_mill = None
             clear_grid = True
@@ -644,7 +648,7 @@ def main(stdscr):
             x = prevx
             y = prevy
             inv, coins = start_forge(stdscr, inv, coins)
-            essentials = [e for e in essentials for i in inv if e in i]
+            essentials = [e for e in essentials if e in inv]
             clear_grid = True
 
         if equipped == "Sword":

@@ -1,23 +1,26 @@
 import curses
 
-def update_inv(stdscr, inv, inv_len, c, essentials):
+def update_inv(stdscr, inv, inv_len, sel, essentials):
     stdscr.clear()
-    for i in range(inv_len):
-        if inv[i][0] in essentials:
-            itext = f"{inv[i][0]}: {inv[i][1]} - E"
+    j = 0
+    for i in inv:
+        if i in essentials:
+            itext = f"{i}: {inv[i]} - E"
         else:
-            itext = f"{inv[i][0]}: {inv[i][1]}"
-        if i == c:
+            itext = f"{i}: {inv[i]}"
+        if i == sel:
             inv_text = f"> {itext}"
         else:
             inv_text = f"{itext}"
-        stdscr.addstr(i, 0, inv_text)
+        stdscr.addstr(j, 0, inv_text)
+        j += 1
     stdscr.addstr(inv_len+1, 0, "j/k/up/down:scroll | i:exit")
 
 def inventory(stdscr, inv, essentials):
     c = 0
     inv_len = len(inv)
-    update_inv(stdscr, inv, inv_len, c, essentials)
+    inv_items = list(inv.keys())
+    update_inv(stdscr, inv, inv_len, inv_items[c], essentials)
     while True:
         key = stdscr.getch()
 
@@ -30,28 +33,27 @@ def inventory(stdscr, inv, essentials):
             if c > inv_len-1: c = inv_len-1
 
         elif key == ord('e'):
-            add_to_essentials(essentials, inv, c)
+            add_to_essentials(essentials, inv_items, c)
 
         elif key == curses.KEY_ENTER or key == ord('\n') or key == ord('\r'):
-            return inv[c][0], inv[c][1]
+            return inv_items[c], inv[inv_items[c]]
        
         # Exit inventory
         elif key == ord('i'):
             stdscr.clear()
             return essentials
 
-        update_inv(stdscr, inv, inv_len, c, essentials)
+        update_inv(stdscr, inv, inv_len, inv_items[c], essentials)
 
 def add_to_inv(item, inv, add_=1):
-    for i in range(len(inv)):
-        if item in inv[i]:
-            inv[i][1] += add_
-            return inv
-    inv.append([item, add_])
+    if item in inv:
+        inv[item] += add_
+    else:
+        inv[item] = add_
     return inv
 
-def add_to_essentials(essentials, inv, c):
+def add_to_essentials(essentials, inv_items, c):
     if len(essentials) == 3:
         essentials.pop(0)
-    essentials.append(inv[c][0])
+    essentials.append(inv_items[c])
     return essentials

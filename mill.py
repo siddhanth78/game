@@ -98,13 +98,11 @@ def run_mill(stdscr, inv, coins, curr_mill):
             if all_mills == []:
                 status = "No mills found"
             else:
-                for i in range(len(inv)):
-                    if inv[i][0] == "Fuel":
-                        if inv[i][1] >= fuel_req:
-                            inv[i][1] -= fuel_req
-                            status = "Fueled! Wood/Iron has been acquired!"
-                            check = 1
-                            break
+                if "Fuel" in inv:
+                    if inv["Fuel"] >= fuel_req:
+                        inv["Fuel"] -= fuel_req
+                        status = "Fueled! Wood/Iron has been acquired!"
+                        check = 1
             if check == 1:
                 for a in all_mills:
                     if a[0] == "Wood mill":
@@ -113,7 +111,6 @@ def run_mill(stdscr, inv, coins, curr_mill):
                         im += 1
                 inv = add_to_inv("Wood", inv, wm*10)
                 inv = add_to_inv("Iron", inv, im*10)
-                inv = [i for i in inv if i[1] > 0]
             else:
                 status = "Insufficient resources"
             clear_grid = True
@@ -125,13 +122,11 @@ def run_mill(stdscr, inv, coins, curr_mill):
             if all_mills == []:
                 status = "No mills found"
             else:
-                for i in range(len(inv)):
-                    if inv[i][0] == "Super Seed":
-                        if inv[i][1] >= ss_req:
-                            inv[i][1] -= ss_req
-                            status = "SUPER-SEEDED! Wood/Iron has been acquired!"
-                            check = 1
-                            break
+                if "Super Seed" in inv:
+                    if inv["Super Seed"] >= ss_req:
+                        inv["Super Seed"] -= ss_req
+                        status = "SUPER-SEEDED! Wood/Iron has been acquired!"
+                        check = 1
             if check == 1:
                 for a in all_mills:
                     if a[0] == "Wood mill":
@@ -140,7 +135,6 @@ def run_mill(stdscr, inv, coins, curr_mill):
                         im += 1
                 inv = add_to_inv("Wood", inv, wm*100)
                 inv = add_to_inv("Iron", inv, im*100)
-                inv = [i for i in inv if i[1] > 0]
             else:
                 status = "Insufficient resources"
             clear_grid = True
@@ -221,15 +215,14 @@ def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
             return all_mills, inv, grid
         elif key == ord('n'):
             ch = 0
-            for i in inv:
-                if "Wood mill" in i:
-                    i[1] -= 1
-                    grid[y][x] = "W"
-                    all_mills.append(["Wood mill", x, y])
-                    ch = 1
-                    break
+            if "Wood mill" in inv:
+                inv["Wood mill"] -= 1
+                grid[y][x] = "W"
+                all_mills.append(["Wood mill", x, y])
+                ch = 1
             if ch == 1:
-                inv = [i for i in inv if i[1] > 0]
+                if "Wood mill" in inv and inv["Wood mill"] <= 0:
+                    del inv["Wood mill"]
                 finalx, finaly = x,y
                 empty = rem_empty(empty, x, y)
                 if empty == []:
@@ -240,15 +233,14 @@ def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
                 prevx, prevy = -1,-1
         elif key == ord('m'):
             ch = 0
-            for i in inv:
-                if "Iron mill" in i:
-                    i[1] -= 1
-                    grid[y][x] = "I"
-                    all_mills.append(["Iron mill", x, y])
-                    ch = 1
-                    break
+            if "Iron mill" in inv:
+                inv["Iron mill"] -= 1
+                grid[y][x] = "W"
+                all_mills.append(["Iron mill", x, y])
+                ch = 1
             if ch == 1:
-                inv = [i for i in inv if i[1] > 0]
+                if "Iron mill" in inv and inv["Iron mill"] <= 0:
+                    del inv["Iron mill"]
                 finalx, finaly = x,y
                 empty = rem_empty(empty, x, y)
                 if empty == []:
@@ -319,11 +311,9 @@ def place_mill(stdscr, eq, mills, grid_id, grid, grid_size, inv):
                 mill_size = [5,5] if eq == "Mill lot" else [10,10]
                 mills[f"mill_{grid_id}_{x}_{y}"] = {"type": eq, "size": mill_size, "all_mills": []}
                 grid[y][x] = 'm' if eq == "Mill lot" else "M"
-            for i in range(len(inv)):
-                if eq == inv[i][0]:
-                    inv[i][1] -= 1
-                    break
-            inv = [i for i in inv if i[1] > 0]
+            inv[eq] -= 1
+            if eq in inv and inv[eq] <= 0:
+                del inv[eq]
             return mills, inv, grid
         
         if grid[y][x] == "o":
