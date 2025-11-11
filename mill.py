@@ -60,7 +60,7 @@ def update_place_mill_screen(stdscr, x, y, prevx, prevy, grid, grid_size, all_mi
             stdscr.addstr(0,j+1,"-")
             stdscr.addstr(grid_size[1]+1,j+1,"-")
             stdscr.addstr(i+1,j+1,grid[i][j])
-    stdscr.addstr(grid_size[1]+3,0,"wasd/arrows:move | q:quit | n:place wood mill | m:place iron mill")
+    stdscr.addstr(grid_size[1]+3,0,"a/d/left/right:move | q:quit | n:place wood mill | m:place iron mill")
     stdscr.refresh()
 
 def run_mill(stdscr, inv, coins, curr_mill):
@@ -138,8 +138,8 @@ def run_mill(stdscr, inv, coins, curr_mill):
                         wm += 1
                     elif a[0] == "Iron mill":
                         im += 1
-                inv = add_to_inv("Wood", inv, wm*50)
-                inv = add_to_inv("Iron", inv, im*50)
+                inv = add_to_inv("Wood", inv, wm*100)
+                inv = add_to_inv("Iron", inv, im*100)
                 inv = [i for i in inv if i[1] > 0]
             else:
                 status = "Insufficient resources"
@@ -177,51 +177,45 @@ def start_mill(stdscr, inv, coins, curr_mill):
     return inv, coins, curr_mill
 
 def find_empty(grid, grid_size):
-    flag = 0
-    x,y = None, None
-    for i in range(2, grid_size[1]-2):
-        for j in range(2, grid_size[0]-2):
-            if grid[i][j] == " ":
+    empty = []
+    for i in range(1, grid_size[1]-1):
+        for j in range(1, grid_size[0]-1):
+            if grid[i][j] not in ["W", "I", "0"]:
                 x,y = j,i
-                flag = 1
-                break
-        if flag == 1:
-            break
-    return x,y
+                empty.append([x,y])
+    return empty
+
+def find_next_empty(empty, ect):
+    ect += 1
+    if ect > len(empty)-1:
+        ect = 0
+    return empty[ect][0], empty[ect][1], ect
+
+def find_prev_empty(empty, ect):
+    ect -= 1
+    if ect < 0:
+        ect = len(empty)-1
+    return empty[ect][0], empty[ect][1], ect
+
+def rem_empty(empty, x, y):
+    return [e for e in empty if e != [x,y]]
 
 def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
-    x,y = find_empty(grid, grid_size)
-    if x == None:
+    empty = find_empty(grid, grid_size)
+    if empty == []:
         return all_mills, inv, grid
+    x,y, ect = find_next_empty(empty, -1)
     prevx, prevy = -1,-1
     update_place_mill_screen(stdscr, x, y, prevx, prevy, grid, grid_size, all_mills)
     while True:
         key = stdscr.getch()
 
-        if key == ord('w') or key == curses.KEY_UP:
-            if y > 1:
-                prevx, prevy = x, y
-                y -= 1
-            elif y <= 1:
-                y = 1
-        elif key == ord('s') or key == curses.KEY_DOWN:
-            if y < grid_size[1]-2:
-                prevx, prevy = x, y
-                y += 1
-            elif y >= grid_size[1]-2:
-                y = grid_size[1]-2
-        elif key == ord('a') or key == curses.KEY_LEFT:
-            if x > 1:
-                prevx, prevy = x, y
-                x -= 1
-            elif x <= 1:
-                x = 1
+        if key == ord('a') or key == curses.KEY_LEFT:
+            prevx, prevy = x,y
+            x,y, ect = find_prev_empty(empty, ect)
         elif key == ord('d') or key == curses.KEY_RIGHT:
-            if x < grid_size[0]-2:
-                prevx, prevy = x, y
-                x += 1
-            elif x >= grid_size[0]-2:
-                x = grid_size[0]-2
+            prevx, prevy = x,y
+            x,y, ect = find_next_empty(empty, ect)
         elif key == ord('q'):
             grid[y][x] = " "
             return all_mills, inv, grid
@@ -237,10 +231,12 @@ def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
             if ch == 1:
                 inv = [i for i in inv if i[1] > 0]
                 finalx, finaly = x,y
-                x,y = find_empty(grid, grid_size)
-                if x == None:
+                empty = rem_empty(empty, x, y)
+                if empty == []:
                     grid[finaly][finalx] = " "
                     return all_mills, inv, grid
+                else:
+                    x,y,ect = find_next_empty(empty, ect)
                 prevx, prevy = -1,-1
         elif key == ord('m'):
             ch = 0
@@ -254,10 +250,12 @@ def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
             if ch == 1:
                 inv = [i for i in inv if i[1] > 0]
                 finalx, finaly = x,y
-                x,y = find_empty(grid, grid_size)
-                if x == None:
+                empty = rem_empty(empty, x, y)
+                if empty == []:
                     grid[finaly][finalx] = " "
                     return all_mills, inv, grid
+                else:
+                    x,y,ect = find_next_empty(empty, ect)
                 prevx, prevy = -1,-1
         
         if grid[y][x] == "W":
@@ -315,14 +313,17 @@ def place_mill(stdscr, eq, mills, grid_id, grid, grid_size, inv):
             grid[y][x] = " "
             return mills, inv, grid
         elif key == curses.KEY_ENTER or key == ord('\n') or key == ord('\r'):
-            mill_size = [5,5] if eq == "Mill lot" else [10,10]
-            mills[f"mill_{grid_id}_{x}_{y}"] = {"type": eq, "size": mill_size, "all_mills": []}
+            if eq == "Fuel Dispenser":
+                grid[y][x] = "D"
+            else:
+                mill_size = [5,5] if eq == "Mill lot" else [10,10]
+                mills[f"mill_{grid_id}_{x}_{y}"] = {"type": eq, "size": mill_size, "all_mills": []}
+                grid[y][x] = 'm' if eq == "Mill lot" else "M"
             for i in range(len(inv)):
                 if eq == inv[i][0]:
                     inv[i][1] -= 1
                     break
             inv = [i for i in inv if i[1] > 0]
-            grid[y][x] = 'm' if eq == "Mill lot" else "M"
             return mills, inv, grid
         
         if grid[y][x] == "o":

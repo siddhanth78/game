@@ -8,7 +8,7 @@ from forge import start_forge
 from mill import start_mill, place_mill
 
 def add_coins(coins):
-    coins += 10
+    coins += random.randint(10, 30)
     return coins
 
 def get_item():
@@ -301,11 +301,21 @@ def main(stdscr):
                 else:
                     item = None
                     clear_grid = True
-            elif equipped == "Mill lot" or equipped == "Big mill lot":
+            elif equipped == "Mill lot" or equipped == "Big mill lot" or equipped == "Fuel Dispenser":
                 mills, inv, grid = place_mill(stdscr, equipped, mills, grid_id, grid, grid_size, inv)
                 essentials = [e for e in essentials for i in inv if e in i]
                 equipped = ""
                 clear_grid = True
+        elif grid[y][x] == "D":
+            coins -= 15
+            for i in range(len(inv)):
+                if inv[i][0] == "Fuel":
+                    inv[i][1] += 1
+                    break
+            x = prevx
+            y = prevy
+            item = "Fuel"
+            clear_grid = True
         elif grid[y][x] == "T":
             if equipped == "Axe":
                 inv = add_to_inv("Wood", inv, random.randint(2,10))

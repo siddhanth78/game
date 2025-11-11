@@ -16,7 +16,8 @@ all_build = [
     "0. Wood mill: 50 Wood | 20 Iron | 200 coins",
     "1. Iron mill: 20 Wood | 50 Iron | 200 coins",
     "2. Mill lot: 100 Wood | 100 Iron | 500 coins",
-    "3. Big mill lot: 300 Wood | 300 Iron | 1000 coins"
+    "3. Big mill lot: 300 Wood | 300 Iron | 1000 coins",
+    "4. Fuel Dispenser: 100 Wood | 100 Iron | 30 Potion | 1000 coins"
 ]
 
 def update(stdscr, inv, inv_len, coins):
