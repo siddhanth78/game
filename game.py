@@ -117,7 +117,7 @@ def handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefi
     return (coins, new_x, new_y, new_prevx, new_prevy, new_grid_id, 
             new_grid, new_grid_size, death_message)
 
-def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies):
+def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies, clear_20 = 0):
     prevgridsize = [len(gamefile["grids"][grid_id][0]), len(gamefile["grids"][grid_id])]
 
     if (int(grid_id)%5 == 1 and deltax < 0) or (int(grid_id)%5 == 0 and deltax > 0):
@@ -143,11 +143,36 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
         enemy_level = random.randint(2, 3)
     elif grid_num <= 15:
         enemy_level = random.randint(4, 7)
-    else:
+    elif grid_num <= 19:
         enemy_level = random.randint(8, 15)
+    else:
+        rows, cols = len(grid), len(grid[0])
+        num_enemies = 10
+        spawned_enemies = []
+        for _ in range(num_enemies):
+            attempts = 0
+            while attempts < 50:  # Prevent infinite loops
+                x = random.randint(1, cols - 2)
+                y = random.randint(1, rows - 2)
+                el = random.randint(10, 14)
+                
+                # Can spawn on empty space, coins, or question marks
+                if grid[y][x] in [' ', 'o', '?']:
+                    enemy = Enemy(x, y, el)
+                    spawned_enemies.append(enemy)
+                    break
+                
+                attempts += 1
 
-    new_enemies = spawn_enemies_in_grid(grid, enemy_level, enemies[grid_id])
-    enemies[grid_id].extend(new_enemies)
+    if grid_num == 20 and clear_20 == 0:
+        if enemies[grid_id] == []:
+            new_enemies = spawned_enemies
+            enemies[grid_id] = new_enemies
+    elif grid_num == 20 and clear_20 == 1:
+        enemies[grid_id] = []
+    else:
+        new_enemies = spawn_enemies_in_grid(grid, enemy_level, enemies[grid_id])
+        enemies[grid_id].extend(new_enemies)
 
     # Add scattered '?' symbols (around 5)
     if random.random() <= 0.1:
@@ -207,21 +232,19 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
                     
                     attempts += 1 
 
-    prevx, prevy = x, y
 
     if deltax > 0:
         x = 0
     elif deltax < 0:
-        x = grid_size[0]-1
+        x = grid_size[0] - 1
     elif deltay > 0:
         y = 0
     elif deltay < 0:
-        y = grid_size[1]-1
-    
-    if prevx > grid_size[0]-1 and deltay != 0:
-        x = grid_size[0]-1
-    if prevy > grid_size[1]-1 and deltax != 0:
-        y = grid_size[1]-1
+        y = grid_size[1] - 1
+
+    x = min(x, grid_size[0] - 1)
+    y = min(y, grid_size[1] - 1)
+
     prevx, prevy = -1, -1
     return x, y, prevx, prevy, grid_id, grid, grid_size, gamefile
 
@@ -304,6 +327,7 @@ def main(stdscr):
     grid = gamefile["grids"][grid_id]
     inv = gamefile["inventory"]
     essentials = gamefile["essentials"]
+    cl20 = gamefile["clear_20"]
 
     curses.noecho()
     curses.cbreak()
@@ -406,7 +430,7 @@ def main(stdscr):
                                 combat_log.append(f"Enemy dropped: {drop_text}!")
                         clear_grid = True
             elif y <= 0:
-                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, -1, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies)
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, -1, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies, clear_20=cl20)
                 clear_grid = True
                 moved = True
 
@@ -436,7 +460,7 @@ def main(stdscr):
                                 combat_log.append(f"Enemy dropped: {drop_text}!")
                         clear_grid = True
             elif y >= grid_size[1]-1:
-                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, 1, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies)
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, 1, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies, clear_20=cl20)
                 clear_grid = True
                 moved = True
 
@@ -466,7 +490,7 @@ def main(stdscr):
                                 combat_log.append(f"Enemy dropped: {drop_text}!")
                         clear_grid = True
             elif x <= 0:
-                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(-1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies)
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(-1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies, clear_20=cl20)
                 clear_grid = True
                 moved = True
 
@@ -496,7 +520,7 @@ def main(stdscr):
                                 combat_log.append(f"Enemy dropped: {drop_text}!")
                         clear_grid = True
             elif x >= grid_size[0]-1:
-                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies)
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies, clear_20=cl20)
                 clear_grid = True
                 moved = True
 
@@ -568,6 +592,7 @@ def main(stdscr):
             gamefile["health"] = player.health
             gamefile["attack"] = atk
             gamefile["enemies"] = serialize_enemies(enemies)
+            gamefile["clear_20"] = cl20
             with open("grids.json", "w") as f:
                 json.dump(gamefile, f)
             sys.exit(0)
@@ -650,6 +675,13 @@ def main(stdscr):
             inv, coins = start_forge(stdscr, inv, coins)
             essentials = [e for e in essentials if e in inv]
             clear_grid = True
+        elif grid[y][x] == ">":
+            x = prevx
+            y = prevy
+            if cl20 == 0:
+                combat_log = ["Clear zone to proceed"]
+            else:
+                pass
 
         if equipped == "Sword":
             atk = 10
@@ -687,6 +719,9 @@ def main(stdscr):
                     enemy.alert(grid, x, y)
                 elif enemy.status == "Roam":
                     enemy.roam(grid)
+
+        if enemies[grid_id] == [] and grid_id == "20":
+            cl20 = 1
 
         update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, player.health, enemies[grid_id], cleared=clear_grid, got_item=item, equipped=equipped, combat_log=combat_log)
         if item:
