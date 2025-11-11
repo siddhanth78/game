@@ -6,6 +6,7 @@ import random
 from inventory import add_to_inv, inventory
 from forge import start_forge
 from mill import start_mill, place_mill
+from enemy import Enemy, check_enemy_collisions, spawn_enemy_in_grid, check_adjacent_enemy_attack
 
 def add_coins(coins):
     coins += random.randint(10, 30)
@@ -34,7 +35,89 @@ def get_item():
         item = ""
     return item
 
-def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, forge):
+def handle_enemy_death(inv, enemy_level):
+    """Handle enemy death drops - 10% Super Seed, 1% Radon"""
+    drops = []
+    
+    # 10% chance for Super Seed
+    if random.random() < 0.10:
+        inv = add_to_inv("Super Seed", inv, 1)
+        drops.append("Super Seed")
+    
+    # 1% chance for Radon
+    if random.random() < 0.01:
+        inv = add_to_inv("Radon", inv, 1)
+        drops.append("Radon")
+    
+    return inv, drops
+
+def is_position_blocked(x, y, enemies):
+    """Check if position is blocked by an enemy"""
+    for enemy in enemies:
+        if enemy.status != "Dead" and enemy.x == x and enemy.y == y:
+            return True
+    return False
+
+def spawn_enemies_in_grid(grid, enemy_level, existing_enemies, max_enemies=4):
+    """Spawn enemies in valid positions when entering new grid"""
+    spawned_enemies = []
+    
+    # Only spawn if there are no existing enemies
+    if len(existing_enemies) > 0:
+        return spawned_enemies
+
+    if random.random() < 0.60:
+        rows, cols = len(grid), len(grid[0])
+        num_enemies = random.randint(1, max_enemies)
+        
+        for _ in range(num_enemies):
+            attempts = 0
+            while attempts < 50:  # Prevent infinite loops
+                x = random.randint(1, cols - 2)
+                y = random.randint(1, rows - 2)
+                
+                # Can spawn on empty space, coins, or question marks
+                if grid[y][x] in [' ', 'o', '?']:
+                    enemy = Enemy(x, y, enemy_level)
+                    spawned_enemies.append(enemy)
+                    break
+                
+                attempts += 1
+    
+    return spawned_enemies
+
+def handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile):
+    """Handle player death - lose coins, respawn at 0,0 grid 1"""
+    death_penalty = 200
+    
+    if coins >= death_penalty:
+        coins -= death_penalty
+        death_message = f"You died! Lost {death_penalty} coins."
+    else:
+        death_message = "You died! Free respawn (insufficient coins)."
+        coins = 0
+    
+    # Reset player health
+    player.health = 300
+    
+    # Clear current position on grid
+    if 0 <= y < len(grid) and 0 <= x < len(grid[0]):
+        grid[y][x] = ' '
+    
+    # Save current grid state
+    gamefile["grids"][grid_id] = grid
+    
+    # Respawn at grid 1, position 0,0
+    new_grid_id = "1"
+    new_grid = gamefile["grids"][new_grid_id]
+    new_grid_size = [len(new_grid[0]), len(new_grid)]
+    new_x, new_y = 0, 0
+    new_prevx, new_prevy = -1, -1
+    
+    return (coins, new_x, new_y, new_prevx, new_prevy, new_grid_id, 
+            new_grid, new_grid_size, death_message)
+
+def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies):
     prevgridsize = [len(gamefile["grids"][grid_id][0]), len(gamefile["grids"][grid_id])]
 
     if (int(grid_id)%5 == 1 and deltax < 0) or (int(grid_id)%5 == 0 and deltax > 0):
@@ -52,6 +135,11 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
         forge["gridx"] = ((int(grid_id)-1)%5)+1
         forge["gridy"] = math.floor((int(grid_id)-1)/5)+1
         forge["state"] = "Discovered"
+
+    # Spawn new enemies in the new grid (30% chance)
+    enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+    new_enemies = spawn_enemies_in_grid(grid, enemy_level, enemies[grid_id])
+    enemies[grid_id].extend(new_enemies)
 
     # Add scattered '?' symbols (around 5)
     if random.random() <= 0.1:
@@ -129,19 +217,23 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
     prevx, prevy = -1, -1
     return x, y, prevx, prevy, grid_id, grid, grid_size, gamefile
 
-def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, cleared=False, got_item=None, equipped=""):
+def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, enemies=[], cleared=False, got_item=None, equipped="", combat_log=None):
     if cleared == True:
         stdscr.clear()
     if prevx >= 0 and prevy >= 0:
         grid[prevy][prevx] = ' '
     grid[y][x] = '0'
+    display_grid = [row[:] for row in grid]
+    for enemy in enemies:
+        if enemy.status != "Dead":
+            display_grid[enemy.y][enemy.x] = 'E'
     for i in range(grid_size[1]):
         stdscr.addstr(i+1,0,"|")
         stdscr.addstr(i+1,grid_size[0]+1,"|")
         for j in range(grid_size[0]):
             stdscr.addstr(0,j+1,"-")
             stdscr.addstr(grid_size[1]+1,j+1,"-")
-            stdscr.addstr(i+1,j+1,grid[i][j])
+            stdscr.addstr(i+1,j+1,display_grid[i][j])
     stdscr.addstr(grid_size[1]+3,0,f"Grid: {((int(grid_id)-1)%5)+1}, {math.floor((int(grid_id)-1)/5)+1}")
     stdscr.addstr(grid_size[1]+4,0,f"Coins: {coins}")
     stdscr.addstr(grid_size[1]+5,0,f"Equipped: {equipped}")
@@ -151,7 +243,48 @@ def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, f
         stdscr.addstr(grid_size[1]+7,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
     if got_item:
         stdscr.addstr(grid_size[1]+10,0,f"{got_item} has been acquired!")
+    if combat_log:
+        for i, log_entry in enumerate(combat_log):
+            if i < 3:
+                stdscr.addstr(grid_size[1]+11+i,0,log_entry)
     stdscr.refresh()
+
+def serialize_enemies(enemies):
+    """Convert enemies to saveable format"""
+    serialized = {}
+    for grid_id, enemy_list in enemies.items():
+        serialized[grid_id] = []
+        for enemy in enemy_list:
+            if enemy.status != "Dead":  # Only save living enemies
+                serialized[grid_id].append({
+                    "x": enemy.x,
+                    "y": enemy.y,
+                    "level": enemy.level,
+                    "health": enemy.health,
+                    "status": enemy.status,
+                    "chase_moves": enemy.chase_moves
+                })
+    return serialized
+
+def deserialize_enemies(serialized_enemies):
+    """Load enemies from saved format"""
+    enemies = {}
+    for grid_id in [str(i) for i in range(1, 21)]:
+        enemies[grid_id] = []
+        
+        if grid_id in serialized_enemies:
+            for enemy_data in serialized_enemies[grid_id]:
+                enemy = Enemy(enemy_data["x"], enemy_data["y"], enemy_data["level"])
+                enemy.health = enemy_data["health"]
+                enemy.status = enemy_data["status"]
+                enemy.chase_moves = enemy_data["chase_moves"]
+                enemies[grid_id].append(enemy)
+    
+    return enemies
+
+class Player:
+    def __init__(self, health):
+        self.health = health
 
 def main(stdscr):
 
@@ -199,7 +332,37 @@ def main(stdscr):
         armor = 5
     else:
         armor = 0
-    update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, equipped=equipped)
+
+    # Initialize enemies
+    if "enemies" in gamefile:
+        enemies = deserialize_enemies(gamefile["enemies"])
+    else:
+        # First time - initialize enemies
+        enemies = {}
+        for grid_num in range(1, 21):
+            enemies[str(grid_num)] = []
+            if random.random() < 0.3:
+                enemy_level = max(1, (grid_num - 1) // 4 + 1)
+                enemy = spawn_enemy_in_grid(gamefile["grids"][str(grid_num)], enemy_level)
+                if enemy:
+                    enemies[str(grid_num)].append(enemy)
+
+    player = Player(health)
+    combat_log = None
+
+    for enemy in enemies[grid_id][:]:
+        if enemy.status == "Dead":
+            enemies[grid_id].remove(enemy)
+        else:
+            # Check proximity to player
+            enemy.check_prox(x, y)
+            
+            # Act based on current status
+            if enemy.status == "Alert":
+                enemy.alert(grid, x, y)
+            elif enemy.status == "Roam":
+                enemy.roam(grid)
+    update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, player.health, enemies[grid_id], equipped=equipped)
     item = None
     ec = 0
 
@@ -207,34 +370,159 @@ def main(stdscr):
         clear_grid = False
         key = stdscr.getch()
         
-        # Movement
+        # Movement and attack
+        moved = False
         if key == ord('w') or key == curses.KEY_UP:
             if y > 0:
-                prevx, prevy = x, y
-                y -= 1
+                new_x, new_y = x, y - 1
+                if not is_position_blocked(new_x, new_y, enemies[grid_id]):
+                    prevx, prevy = x, y
+                    y = new_y
+                    moved = True
+                else:
+                    # Try to attack adjacent enemy instead
+                    attack_result = check_adjacent_enemy_attack(enemies[grid_id], x, y, atk, player, armor)
+                    if attack_result.get("collision", False):
+                        combat_log = attack_result.get("log", [])
+                        if attack_result.get("player_died", False):
+                            (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                            death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                            combat_log = [death_message, "Respawned at starting location."]
+                            clear_grid = True
+                        if attack_result.get("enemy_died", False):
+                            coins += attack_result["coins_gained"]
+                            enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                            inv, drops = handle_enemy_death(inv, enemy_level)
+                            if drops:
+                                drop_text = ", ".join(drops)
+                                combat_log.append(f"Enemy dropped: {drop_text}!")
+                        clear_grid = True
             elif y <= 0:
-                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, -1, x, y, prevx, prevy, grid_id, grid, gamefile, forge)
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, -1, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies)
                 clear_grid = True
+                moved = True
+
         elif key == ord('s') or key == curses.KEY_DOWN:
             if y < grid_size[1]-1:
-                prevx, prevy = x, y
-                y += 1
+                new_x, new_y = x, y + 1
+                if not is_position_blocked(new_x, new_y, enemies[grid_id]):
+                    prevx, prevy = x, y
+                    y = new_y
+                    moved = True
+                else:
+                    # Try to attack adjacent enemy instead
+                    attack_result = check_adjacent_enemy_attack(enemies[grid_id], x, y, atk, player, armor)
+                    if attack_result.get("collision", False):
+                        combat_log = attack_result.get("log", [])
+                        if attack_result.get("player_died", False):
+                            (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                            death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                            combat_log = [death_message, "Respawned at starting location."]
+                            clear_grid = True
+                        if attack_result.get("enemy_died", False):
+                            coins += attack_result["coins_gained"]
+                            enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                            inv, drops = handle_enemy_death(inv, enemy_level)
+                            if drops:
+                                drop_text = ", ".join(drops)
+                                combat_log.append(f"Enemy dropped: {drop_text}!")
+                        clear_grid = True
             elif y >= grid_size[1]-1:
-                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, 1, x, y, prevx, prevy, grid_id, grid, gamefile, forge)
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(0, 1, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies)
                 clear_grid = True
+                moved = True
+
         elif key == ord('a') or key == curses.KEY_LEFT:
             if x > 0:
-                prevx, prevy =x, y
-                x -= 1
+                new_x, new_y = x - 1, y
+                if not is_position_blocked(new_x, new_y, enemies[grid_id]):
+                    prevx, prevy = x, y
+                    x = new_x
+                    moved = True
+                else:
+                    # Try to attack adjacent enemy instead
+                    attack_result = check_adjacent_enemy_attack(enemies[grid_id], x, y, atk, player, armor)
+                    if attack_result.get("collision", False):
+                        combat_log = attack_result.get("log", [])
+                        if attack_result.get("player_died", False):
+                            (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                            death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                            combat_log = [death_message, "Respawned at starting location."]
+                            clear_grid = True
+                        if attack_result.get("enemy_died", False):
+                            coins += attack_result["coins_gained"]
+                            enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                            inv, drops = handle_enemy_death(inv, enemy_level)
+                            if drops:
+                                drop_text = ", ".join(drops)
+                                combat_log.append(f"Enemy dropped: {drop_text}!")
+                        clear_grid = True
             elif x <= 0:
-                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(-1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge)
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(-1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies)
                 clear_grid = True
+                moved = True
+
         elif key == ord('d') or key == curses.KEY_RIGHT:
             if x < grid_size[0]-1:
-                prevx, prevy = x, y
-                x += 1
+                new_x, new_y = x + 1, y
+                if not is_position_blocked(new_x, new_y, enemies[grid_id]):
+                    prevx, prevy = x, y
+                    x = new_x
+                    moved = True
+                else:
+                    # Try to attack adjacent enemy instead
+                    attack_result = check_adjacent_enemy_attack(enemies[grid_id], x, y, atk, player, armor)
+                    if attack_result.get("collision", False):
+                        combat_log = attack_result.get("log", [])
+                        if attack_result.get("player_died", False):
+                            (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                            death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                            combat_log = [death_message, "Respawned at starting location."]
+                            clear_grid = True
+                        if attack_result.get("enemy_died", False):
+                            coins += attack_result["coins_gained"]
+                            enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                            inv, drops = handle_enemy_death(inv, enemy_level)
+                            if drops:
+                                drop_text = ", ".join(drops)
+                                combat_log.append(f"Enemy dropped: {drop_text}!")
+                        clear_grid = True
             elif x >= grid_size[0]-1:
-                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge)
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(1, 0, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies)
+                clear_grid = True
+                moved = True
+
+        if key in [ord('w'), ord('s'), ord('a'), ord('d')] and not moved:
+            print(f"Trying adjacent attack at {x},{y}")  # Debug
+            # Manual check for adjacent enemies
+            for enemy in enemies[grid_id]:
+                if enemy.status != "Dead":
+                    distance = abs(enemy.x - x) + abs(enemy.y - y)
+                    if distance == 1:  # Adjacent
+                        print(f"Found adjacent enemy at {enemy.x},{enemy.y}")
+                        combat_log = [f"Attacking enemy! Damage: {atk}"]
+                        clear_grid = True
+                        break
+
+        if key in [ord('w'), ord('s'), ord('a'), ord('d'), curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]:
+            collision_result = check_enemy_collisions(enemies[grid_id], x, y, atk, player)
+            if collision_result.get("collision", True):
+                combat_log = collision_result.get("log", [])
+                
+                if collision_result.get("player_died", False):
+                    (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                    death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                    combat_log = [death_message, "Respawned at starting location."]
+                    clear_grid = True
+                
+                if collision_result.get("enemy_died", False):
+                    coins += collision_result["coins_gained"]
+                    enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                    inv, drops = handle_enemy_death(inv, enemy_level)
+                    if drops:
+                        drop_text = ", ".join(drops)
+                        combat_log.append(f"Enemy dropped: {drop_text}!")
+                
                 clear_grid = True
 
         # Inventory Menu
@@ -269,8 +557,9 @@ def main(stdscr):
             gamefile["equipped"] = equipped
             gamefile["essentials"] = essentials
             gamefile["mills"] = mills
-            gamefile["health"] = health
+            gamefile["health"] = player.health
             gamefile["attack"] = atk
+            gamefile["enemies"] = serialize_enemies(enemies)
             with open("grids.json", "w") as f:
                 json.dump(gamefile, f)
             sys.exit(0)
@@ -305,6 +594,18 @@ def main(stdscr):
                 mills, inv, grid = place_mill(stdscr, equipped, mills, grid_id, grid, grid_size, inv)
                 essentials = [e for e in essentials for i in inv if e in i]
                 equipped = ""
+                clear_grid = True
+            elif equipped == "Potion":
+                for i in range(len(inv)):
+                    if inv[i][0] == "Potion":
+                        inv[i][1] -= 1
+                        player.health += 10
+                        if player.health > 300:
+                            player.health = 300
+                        if inv[i][1] <= 0:
+                            equipped = ""
+                essentials = [e for e in essentials for i in inv if e in i]
+                inv = [i for i in inv if i[1] > 0]
                 clear_grid = True
         elif grid[y][x] == "D":
             coins -= 15
@@ -369,7 +670,21 @@ def main(stdscr):
             armor = 5
         else:
             armor = 0
-        update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, cleared=clear_grid, got_item=item, equipped=equipped)
+
+        for enemy in enemies[grid_id][:]:
+            if enemy.status == "Dead":
+                enemies[grid_id].remove(enemy)
+            else:
+                # Check proximity to player
+                enemy.check_prox(x, y)
+                
+                # Act based on current status
+                if enemy.status == "Alert":
+                    enemy.alert(grid, x, y)
+                elif enemy.status == "Roam":
+                    enemy.roam(grid)
+
+        update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, player.health, enemies[grid_id], cleared=clear_grid, got_item=item, equipped=equipped, combat_log=combat_log)
         if item:
             item = None
 
