@@ -129,7 +129,7 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
     prevx, prevy = -1, -1
     return x, y, prevx, prevy, grid_id, grid, grid_size, gamefile
 
-def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, cleared=False, got_item=None, equipped=""):
+def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, cleared=False, got_item=None, equipped=""):
     if cleared == True:
         stdscr.clear()
     if prevx >= 0 and prevy >= 0:
@@ -145,11 +145,12 @@ def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, f
     stdscr.addstr(grid_size[1]+3,0,f"Grid: {((int(grid_id)-1)%5)+1}, {math.floor((int(grid_id)-1)/5)+1}")
     stdscr.addstr(grid_size[1]+4,0,f"Coins: {coins}")
     stdscr.addstr(grid_size[1]+5,0,f"Equipped: {equipped}")
-    stdscr.addstr(grid_size[1]+8,0,"wasd/arrows:move | q:quit | i:inventory | enter:action")
+    stdscr.addstr(grid_size[1]+6,0,f"Atk: {atk} | Health: {health} | Armor: {armor}")
+    stdscr.addstr(grid_size[1]+9,0,"wasd/arrows:move | q:quit | i:inventory | enter:action")
     if forge["state"] == "Discovered":
-        stdscr.addstr(grid_size[1]+6,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
+        stdscr.addstr(grid_size[1]+7,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
     if got_item:
-        stdscr.addstr(grid_size[1]+9,0,f"{got_item} has been acquired!")
+        stdscr.addstr(grid_size[1]+10,0,f"{got_item} has been acquired!")
     stdscr.refresh()
 
 def main(stdscr):
@@ -172,9 +173,33 @@ def main(stdscr):
     forge = gamefile["forge"]
     equipped = gamefile["equipped"]
     mills = gamefile["mills"]
+    health = gamefile["health"]
     curr_mill = None
     prevx, prevy = -1,-1
-    update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, equipped=equipped)
+    if equipped == "Sword":
+        atk = 10
+    elif equipped == "Big Sword":
+        atk = 50
+    elif equipped == "Epic Sword":
+        atk = 200
+    elif equipped == "Godly Sword":
+        atk = 500
+    elif equipped == "Axe":
+        atk = 5
+    else:
+        atk = 1
+
+    if "Godly Shield" in essentials:
+        armor = 100
+    elif "Epic Shield" in essentials:
+        armor = 50
+    elif "Big Shield" in essentials:
+        armor = 20
+    elif "Shield" in essentials:
+        armor = 5
+    else:
+        armor = 0
+    update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, equipped=equipped)
     item = None
     ec = 0
 
@@ -244,6 +269,8 @@ def main(stdscr):
             gamefile["equipped"] = equipped
             gamefile["essentials"] = essentials
             gamefile["mills"] = mills
+            gamefile["health"] = health
+            gamefile["attack"] = atk
             with open("grids.json", "w") as f:
                 json.dump(gamefile, f)
             sys.exit(0)
@@ -308,7 +335,31 @@ def main(stdscr):
             inv, coins = start_forge(stdscr, inv, coins)
             essentials = [e for e in essentials for i in inv if e in i]
             clear_grid = True
-        update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, cleared=clear_grid, got_item=item, equipped=equipped)
+
+        if equipped == "Sword":
+            atk = 10
+        elif equipped == "Big Sword":
+            atk = 50
+        elif equipped == "Epic Sword":
+            atk = 200
+        elif equipped == "Godly Sword":
+            atk = 500
+        elif equipped == "Axe":
+            atk = 5
+        else:
+            atk = 1
+
+        if "Godly Shield" in essentials:
+            armor = 100
+        elif "Epic Shield" in essentials:
+            armor = 50
+        elif "Big Shield" in essentials:
+            armor = 20
+        elif "Shield" in essentials:
+            armor = 5
+        else:
+            armor = 0
+        update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, cleared=clear_grid, got_item=item, equipped=equipped)
         if item:
             item = None
 

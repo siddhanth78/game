@@ -226,33 +226,39 @@ def place_mill_in_lot(stdscr, grid, grid_size, inv, all_mills):
             grid[y][x] = " "
             return all_mills, inv, grid
         elif key == ord('n'):
+            ch = 0
             for i in inv:
                 if "Wood mill" in i:
                     i[1] -= 1
                     grid[y][x] = "W"
                     all_mills.append(["Wood mill", x, y])
+                    ch = 1
                     break
-            inv = [i for i in inv if i[1] > 0]
-            finalx, finaly = x,y
-            x,y = find_empty(grid, grid_size)
-            if x == None:
-                grid[finaly][finalx] = " "
-                return all_mills, inv, grid
-            prevx, prevy = -1,-1
+            if ch == 1:
+                inv = [i for i in inv if i[1] > 0]
+                finalx, finaly = x,y
+                x,y = find_empty(grid, grid_size)
+                if x == None:
+                    grid[finaly][finalx] = " "
+                    return all_mills, inv, grid
+                prevx, prevy = -1,-1
         elif key == ord('m'):
+            ch = 0
             for i in inv:
                 if "Iron mill" in i:
                     i[1] -= 1
                     grid[y][x] = "I"
                     all_mills.append(["Iron mill", x, y])
+                    ch = 1
                     break
-            inv = [i for i in inv if i[1] > 0]
-            finalx, finaly = x,y
-            x,y = find_empty(grid, grid_size)
-            if x == None:
-                grid[finaly][finalx] = " "
-                return all_mills, inv, grid
-            prevx, prevy = -1,-1
+            if ch == 1:
+                inv = [i for i in inv if i[1] > 0]
+                finalx, finaly = x,y
+                x,y = find_empty(grid, grid_size)
+                if x == None:
+                    grid[finaly][finalx] = " "
+                    return all_mills, inv, grid
+                prevx, prevy = -1,-1
         
         if grid[y][x] == "W":
             x = prevx
