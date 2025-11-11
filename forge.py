@@ -2,22 +2,20 @@ import curses
 from inventory import add_to_inv
 
 all_merge = [
-             "0. Sword: 5 Wood | 5 Iron | 10 coins",
-             "1. Shield: 5 Wood | 5 Iron | 10 coins",
-             "2. Axe: 5 Wood | 5 Iron | 10 coins",
-             "3. Pickaxe: 5 Wood | 5 Iron | 1 Axe | 10 coins",
-             "4. Big Sword: 10 Wood | 10 Iron | 2 Sword | 20 coins",
-             "5. Big Shield: 10 Wood | 10 Iron | 2 Shield | 20 coins",
-             "6. Epic Sword: 30 Wood | 30 Iron | 5 Sword | 1 Big Sword | 1 Radon | 50 coins",
-             "7. Epic Shield: 30 Wood | 30 Iron | 5 Shield | 1 Big Shield | 1 Radon | 50 coins",
-             "8. Godly Sword: 100 Wood | 100 Iron | 15 Big Sword | 3 Epic Sword | 5 Radon | 150 coins",
-             "9. Godly Shield: 100 Wood | 100 Iron | 15 Big Shield | 3 Epic Shield | 5 Radon | 150 coins"]
+             "0. Sword: 20 Wood | 20 Iron | 50 coins",
+             "1. Shield: 20 Wood | 20 Iron | 50 coins",
+             "2. Big Sword: 100 Wood | 100 Iron | 2 Sword | 200 coins",
+             "3. Big Shield: 100 Wood | 100 Iron | 2 Shield | 200 coins",
+             "4. Epic Sword: 300 Wood | 300 Iron | 5 Sword | 1 Big Sword | 1 Radon | 500 coins",
+             "5. Epic Shield: 300 Wood | 300 Iron | 5 Shield | 1 Big Shield | 1 Radon | 500 coins",
+             "6. Godly Sword: 1000 Wood | 1000 Iron | 15 Big Sword | 3 Epic Sword | 5 Radon | 1500 coins",
+             "7. Godly Shield: 1000 Wood | 1000 Iron | 15 Big Shield | 3 Epic Shield | 5 Radon | 1500 coins"]
 
 all_build = [
-    "0. Wood mill: 30 Wood | 10 Iron | 20 coins",
-    "1. Iron mill: 30 Iron | 10 Wood | 20 coins",
-    "2. Mill lot: 20 Wood | 20 Iron | 50 coins",
-    "3. Big mill lot: 30 Wood | 30 Iron | 100 coins"
+    "0. Wood mill: 300 Wood | 100 Iron | 200 coins",
+    "1. Iron mill: 300 Iron | 100 Wood | 200 coins",
+    "2. Mill lot: 200 Wood | 200 Iron | 500 coins",
+    "3. Big mill lot: 300 Wood | 300 Iron | 1000 coins"
 ]
 
 def update(stdscr, inv, inv_len, coins):
