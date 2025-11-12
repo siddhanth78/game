@@ -524,7 +524,7 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                     prevx, prevy = x, y
                     x, y = target_x, target_y
 
-        elif key == ord("v"):
+        elif key == ord("v") and vendor["state"] == "Discovered":
             inv, coins = start_vendor(stdscr, inv, coins)
             essentials = [e for e in essentials if e in inv]
             clear_grid = True
