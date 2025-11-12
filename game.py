@@ -7,6 +7,7 @@ from inventory import add_to_inv, inventory
 from forge import start_forge
 from mill import start_mill, place_mill
 from enemy import Enemy, check_enemy_collisions, spawn_enemy_in_grid, check_adjacent_enemy_attack
+from depths import start_depths
 
 def add_coins(coins):
     coins += random.randint(10, 30)
@@ -692,7 +693,8 @@ def main(stdscr):
             if cl20 == 0:
                 combat_log = ["Clear zone to proceed"]
             else:
-                pass
+                atk, player.health, coins, inv, equipped, essentials = start_depths(atk, player.health, coins, inv, equipped, essentials)
+                
 
         if equipped == "Sword":
             atk = 10
