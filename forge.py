@@ -99,7 +99,6 @@ def merge_items(stdscr, inv, coins, catalogue):
         "Radon": 0,
         "Sword": 0,
         "Shield": 0,
-        "Axe": 0,
         "Big Sword": 0,
         "Big Shield": 0,
         "Epic Sword": 0,
@@ -140,8 +139,6 @@ def merge_items(stdscr, inv, coins, catalogue):
                         total_req["Sword"] += int(sr.split(" ")[0])
                     elif "Shield" in sr:
                         total_req["Shield"] += int(sr.split(" ")[0])
-                    elif "Axe" in sr:
-                        total_req["Axe"] += int(sr.split(" ")[0])
                     elif "coins" in sr:
                         reqcoins += int(sr.split(" ")[0])
 
@@ -173,8 +170,6 @@ def merge_items(stdscr, inv, coins, catalogue):
                     total_req["Sword"] -= int(sr.split(" ")[0])*del_q
                 elif "Shield" in sr:
                     total_req["Shield"] -= int(sr.split(" ")[0])*del_q
-                elif "Axe" in sr:
-                    total_req["Axe"] -= int(sr.split(" ")[0])*del_q
                 elif "coins" in sr:
                     reqcoins -= int(sr.split(" ")[0])*del_q
             if c >= len(selected_items):
@@ -216,8 +211,6 @@ def merge_items(stdscr, inv, coins, catalogue):
                     total_req["Sword"] += int(sr.split(" ")[0])
                 elif "Shield" in sr:
                     total_req["Shield"] += int(sr.split(" ")[0])
-                elif "Axe" in sr:
-                    total_req["Axe"] += int(sr.split(" ")[0])
                 elif "coins" in sr:
                     reqcoins += int(sr.split(" ")[0])
         elif (key == ord('n') or key == curses.KEY_LEFT) and selected_items != []:
@@ -252,8 +245,6 @@ def merge_items(stdscr, inv, coins, catalogue):
                         total_req["Sword"] -= int(sr.split(" ")[0])
                     elif "Shield" in sr:
                         total_req["Shield"] -= int(sr.split(" ")[0])
-                    elif "Axe" in sr:
-                        total_req["Axe"] -= int(sr.split(" ")[0])
                     elif "coins" in sr:
                         reqcoins -= int(sr.split(" ")[0])
         
@@ -270,7 +261,6 @@ def merge_items(stdscr, inv, coins, catalogue):
                 "Radon": 0,
                 "Sword": 0,
                 "Shield": 0,
-                "Axe": 0,
                 "Big Sword": 0,
                 "Big Shield": 0,
                 "Epic Sword": 0,

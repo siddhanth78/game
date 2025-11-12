@@ -6,8 +6,10 @@ import random
 from inventory import add_to_inv, inventory
 from forge import start_forge
 from mill import start_mill, place_mill
-from enemy import Enemy, check_enemy_collisions, spawn_enemy_in_grid, check_adjacent_enemy_attack
-from depths import start_depths
+from enemy import Enemy, spawn_enemy_in_grid, check_adjacent_enemy_attack
+from start_depths import start_depths
+from player_ascension import load_ascension_data, ascend_player, save_ascension_data, get_ascension_display_info
+import gen_depths
 
 def add_coins(coins):
     coins += random.randint(10, 30)
@@ -249,7 +251,7 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
 
     return new_x, new_y, -1, -1, grid_id, grid, grid_size, gamefile
 
-def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, enemies=[], cleared=False, got_item=None, equipped="", combat_log=None):
+def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, enemies=[], cleared=False, got_item=None, equipped="", combat_log=None, ascension_data=None):
     if cleared:
         stdscr.clear()
 
@@ -279,10 +281,22 @@ def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, f
     stdscr.addstr(grid_size[1]+4, 0, f"Coins: {coins}")
     stdscr.addstr(grid_size[1]+5, 0, f"Equipped: {equipped}")
     stdscr.addstr(grid_size[1]+6, 0, f"Atk: {atk} | Health: {health} | Armor: {armor}")
-    stdscr.addstr(grid_size[1]+9, 0, "wasd/arrows:move | q:quit | i:inventory | enter:action")
+    
+    # Add ascension info display
+    ascension_info = get_ascension_display_info(ascension_data)
+    stdscr.addstr(grid_size[1]+8, 0, ascension_info)
+
+    bar = "wasd/arrows:move | q:quit | i:inventory | enter:action | j/k:switch equipped"
+
+    if ascension_data["boss_kills"] > 0:
+        bar += " | A:ASCEND"
     
     if forge["state"] == "Discovered":
         stdscr.addstr(grid_size[1]+7, 0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
+        if ascension_data["unlocks"]["fast_access"]:
+            bar += " | f:forge"
+
+    stdscr.addstr(grid_size[1]+9, 0, bar)
     if got_item:
         stdscr.addstr(grid_size[1]+10, 0, f"{got_item} has been acquired!")
     if combat_log:
@@ -330,6 +344,8 @@ class Player:
         self.health = health
 
 def main(stdscr):
+    # Load ascension data
+    ascension_data = load_ascension_data()
 
     with open("grids.json", "r") as file:
         gamefile = json.load(file)
@@ -353,6 +369,7 @@ def main(stdscr):
     health = gamefile["health"]
     curr_mill = None
     prevx, prevy = -1,-1
+    
     if equipped == "Sword":
         atk = 10
     elif equipped == "Big Sword":
@@ -368,14 +385,19 @@ def main(stdscr):
 
     if "Godly Shield" in essentials:
         armor = 100
+        regen = 2
     elif "Epic Shield" in essentials:
         armor = 50
+        regen = 1
     elif "Big Shield" in essentials:
         armor = 20
+        regen = 0
     elif "Shield" in essentials:
         armor = 5
+        regen = 0
     else:
         armor = 0
+        regen = 0
 
     # Initialize enemies
     if "enemies" in gamefile:
@@ -383,13 +405,15 @@ def main(stdscr):
     else:
         # First time - initialize enemies
         enemies = {}
-        for grid_num in range(1, 21):
+        for grid_num in range(1, 20):
             enemies[str(grid_num)] = []
             if random.random() < 0.3:
                 enemy_level = max(1, (grid_num - 1) // 4 + 1)
                 enemy = spawn_enemy_in_grid(gamefile["grids"][str(grid_num)], enemy_level)
                 if enemy:
                     enemies[str(grid_num)].append(enemy)
+
+        enemies["20"] = []
 
     player = Player(health)
     combat_log = None
@@ -406,7 +430,11 @@ def main(stdscr):
                 enemy.alert(grid, x, y)
             elif enemy.status == "Roam":
                 enemy.roam(grid)
-    update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, player.health, enemies[grid_id], equipped=equipped)
+    
+    # Get ascension display info
+    ascension_info = get_ascension_display_info(ascension_data)
+    
+    update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, player.health, enemies[grid_id], equipped=equipped, ascension_data=ascension_data)
     item = None
     ec = 0
 
@@ -536,37 +564,69 @@ def main(stdscr):
                 clear_grid = True
                 moved = True
 
-        if key in [ord('w'), ord('s'), ord('a'), ord('d')] and not moved:
-            print(f"Trying adjacent attack at {x},{y}")  # Debug
-            # Manual check for adjacent enemies
-            for enemy in enemies[grid_id]:
-                if enemy.status != "Dead":
-                    distance = abs(enemy.x - x) + abs(enemy.y - y)
-                    if distance == 1:  # Adjacent
-                        print(f"Found adjacent enemy at {enemy.x},{enemy.y}")
-                        combat_log = [f"Attacking enemy! Damage: {atk}"]
-                        clear_grid = True
-                        break
+        # Ascension (Shift+A)
+        elif key == ord('A'):  # Capital A (Shift+A)
+            if ascension_data["boss_kills"] > 0:
+                messages, reset_needed, ascension_data = ascend_player(ascension_data)
+                for msg in messages:
+                    combat_log = [msg] if not combat_log else combat_log + [msg]
+                ascension_data = save_ascension_data(ascension_data)
+                
+                if reset_needed:
+                    n_gamefile = {
+                        "grids": gamefile.get("grids", {}),
+                        "curr_grid": "1",
+                        "player": [0, 0],
+                        "inventory": {"Axe": 1, "Pickaxe": 1, "Spark": inv.get("Spark", 1)},
+                        "coins": 0,
+                        "health": 300,
+                        "attack": 1,
+                        "forge": gamefile.get("forge", {"state": "Undiscovered", "loc": "2", "gridx": 1, "gridy": 1}),
+                        "equipped": "",
+                        "essentials": [],
+                        "mills": gamefile.get("mills", {}),
+                        "clear_20": 0
+                    }
 
-        if key in [ord('w'), ord('s'), ord('a'), ord('d'), curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]:
-            collision_result = check_enemy_collisions(enemies[grid_id], x, y, atk, player)
-            if collision_result.get("collision", True):
-                combat_log = collision_result.get("log", [])
+                    with open("grids.json", "w") as file:
+                        json.dump(n_gamefile, file, indent=2)
+                    
+                    # Also reset depths completely
+                    gen_depths.generate()
+                    # Show reset message and exit to main game
+                    stdscr.clear()
+                    stdscr.addstr(0, 0, "ASCENSION COMPLETE!")
+                    stdscr.addstr(2, 0, "All progress reset. Starting fresh in the main world.")
+                    stdscr.addstr(3, 0, "Your new powers await...")
+                    stdscr.addstr(5, 0, "Press any key to return to main game...")
+                    stdscr.refresh()
+                    stdscr.getch()
+
+                    gamefile = n_gamefile
+
+                    grid = gamefile["grids"][grid_id]
+                    grid_id = gamefile["curr_grid"]
+                    x, y = gamefile["player"]
+                    inv = gamefile["inventory"]
+                    coins = gamefile["coins"]
+                    forge = gamefile["forge"]
+                    equipped = gamefile["equipped"]
+                    essentials = gamefile["essentials"]
+                    mills = gamefile["mills"]
+                    player.health = gamefile["health"]
+                    atk = gamefile["attack"]
+                    enemies = deserialize_enemies(gamefile["enemies"])
+                    cl20 = gamefile["clear_20"]
                 
-                if collision_result.get("player_died", False):
-                    (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
-                    death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
-                    combat_log = [death_message, "Respawned at starting location."]
-                    clear_grid = True
-                
-                if collision_result.get("enemy_died", False):
-                    coins += collision_result["coins_gained"]
-                    enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
-                    inv, drops = handle_enemy_death(inv, enemy_level)
-                    if drops:
-                        drop_text = ", ".join(drops)
-                        combat_log.append(f"Enemy dropped: {drop_text}!")
-                
+                clear_grid = True
+            else:
+                combat_log = ["No ascension available - defeat final boss first!"]
+                clear_grid = True
+
+        elif key == ord('f'):
+            if ascension_data["unlocks"]["fast_access"] and forge["state"] == "Discovered":
+                inv, coins = start_forge(stdscr, inv, coins)
+                essentials = [e for e in essentials if e in inv]
                 clear_grid = True
 
         # Inventory Menu
@@ -605,6 +665,10 @@ def main(stdscr):
             gamefile["attack"] = atk
             gamefile["enemies"] = serialize_enemies(enemies)
             gamefile["clear_20"] = cl20
+            
+            # Save ascension data
+            ascension_data = save_ascension_data(ascension_data)
+            
             with open("grids.json", "w") as f:
                 json.dump(gamefile, f)
             sys.exit(0)
@@ -693,7 +757,28 @@ def main(stdscr):
             if cl20 == 0:
                 combat_log = ["Clear zone to proceed"]
             else:
-                atk, player.health, coins, inv, equipped, essentials = start_depths(atk, player.health, coins, inv, equipped, essentials)
+                gamefile["grids"][grid_id] = grid
+                gamefile["curr_grid"] = grid_id
+                gamefile["player"] = [x,y]
+                gamefile["inventory"] = inv
+                gamefile["coins"] = coins
+                gamefile["forge"] = forge
+                gamefile["equipped"] = equipped
+                gamefile["essentials"] = essentials
+                gamefile["mills"] = mills
+                gamefile["health"] = player.health
+                gamefile["attack"] = atk
+                gamefile["enemies"] = serialize_enemies(enemies)
+                gamefile["clear_20"] = cl20
+
+                with open("grids.json", "w") as f:
+                    json.dump(gamefile, f)
+
+                returned_values = start_depths(x,y,stdscr, atk, player.health, coins, inv, equipped, essentials, ascension_data)
+                if returned_values:
+                    atk, player.health, coins, inv, equipped, essentials, ascension_data = returned_values
+                    
+                clear_grid = True
                 
 
         if equipped == "Sword":
@@ -711,14 +796,19 @@ def main(stdscr):
 
         if "Godly Shield" in essentials:
             armor = 100
+            regen = 2
         elif "Epic Shield" in essentials:
             armor = 50
+            regen = 1
         elif "Big Shield" in essentials:
             armor = 20
+            regen = 0
         elif "Shield" in essentials:
             armor = 5
+            regen = 0
         else:
             armor = 0
+            regen = 0
 
         for enemy in enemies[grid_id][:]:
             if enemy.status == "Dead":
@@ -736,7 +826,7 @@ def main(stdscr):
         if enemies[grid_id] == [] and grid_id == "20":
             cl20 = 1
 
-        update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, player.health, enemies[grid_id], cleared=clear_grid, got_item=item, equipped=equipped, combat_log=combat_log)
+        update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, player.health, enemies[grid_id], cleared=clear_grid, got_item=item, equipped=equipped, combat_log=combat_log, ascension_data=ascension_data)
         if item:
             item = None
 

@@ -1,6 +1,8 @@
 import json
 import random
 
+DEV = False
+
 def generate():
     gjson = dict()
     flag = False
@@ -126,10 +128,21 @@ def generate():
         gjson[str(i)] = grid
         
     gjson["20"][-1][-1] = '>'
+
+    inv = {"Axe": 1, "Pickaxe": 1}
+    cl = 0
+    cg = "1"
+
+    if DEV == True:
+        inv["Epic Sword"] = 1
+        inv["Epic Shield"] = 1
+        inv["Radon"] = 10
+        cl = 1
+        cg = "19"
     
-    wjson = {"grids": gjson, "curr_grid": "1", "player": [0, 0],
-             "inventory": {"Axe": 1, "Pickaxe": 1}, "coins": 0, "health": 300,
-             "forge":forge, "equipped": "", "essentials": [], "mills": {}, "clear_20": 0}
+    wjson = {"grids": gjson, "curr_grid": cg, "player": [0,0],
+             "inventory": inv, "coins": 0, "health": 300,
+             "forge":forge, "equipped": "", "essentials": [], "mills": {}, "clear_20": cl}
     with open("grids.json", "w") as f:
         json.dump(wjson, f, indent=2)
     print("Generated world")
