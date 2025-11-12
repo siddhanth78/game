@@ -117,23 +117,44 @@ def handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefi
     return (coins, new_x, new_y, new_prevx, new_prevy, new_grid_id, 
             new_grid, new_grid_size, death_message)
 
-def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies, clear_20 = 0):
+def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, forge, enemies, clear_20=0):
     prevgridsize = [len(gamefile["grids"][grid_id][0]), len(gamefile["grids"][grid_id])]
 
-    if (int(grid_id)%5 == 1 and deltax < 0) or (int(grid_id)%5 == 0 and deltax > 0):
+    new_grid_num = int(grid_id) + deltax + (deltay * 5)
+
+    if (int(grid_id) % 5 == 1 and deltax < 0) or (int(grid_id) % 5 == 0 and deltax > 0):
         return x, y, prevx, prevy, grid_id, grid, prevgridsize, gamefile
     if (int(grid_id) in [1,2,3,4,5] and deltay < 0) or (int(grid_id) in [16,17,18,19,20] and deltay > 0):
         return x, y, prevx, prevy, grid_id, grid, prevgridsize, gamefile
- 
+
+    new_grid_id = str(new_grid_num)
+    new_grid = gamefile["grids"][new_grid_id]
+    new_grid_size = [len(new_grid[0]), len(new_grid)]
+
+    if deltax > 0:
+        new_x = 0
+        new_y = min(max(0, y), new_grid_size[1] - 1)
+    elif deltax < 0:
+        new_x = new_grid_size[0] - 1
+        new_y = min(max(0, y), new_grid_size[1] - 1)
+    elif deltay > 0:
+        new_y = 0
+        new_x = min(max(0, x), new_grid_size[0] - 1)
+    elif deltay < 0:
+        new_y = new_grid_size[1] - 1
+        new_x = min(max(0, x), new_grid_size[0] - 1)
+
     grid[y][x] = ' '
     gamefile["grids"][grid_id] = grid
-    grid_id = str(int(grid_id)+deltax+(deltay*5))
-    grid = gamefile["grids"][grid_id]
-    grid_size = [len(grid[0]), len(grid)]
+    
+    # Switch to new grid
+    grid_id = new_grid_id
+    grid = new_grid
+    grid_size = new_grid_size
 
     if forge["loc"] == grid_id and forge["state"] == "Undiscovered":
-        forge["gridx"] = ((int(grid_id)-1)%5)+1
-        forge["gridy"] = math.floor((int(grid_id)-1)/5)+1
+        forge["gridx"] = ((int(grid_id)-1) % 5) + 1
+        forge["gridy"] = math.floor((int(grid_id)-1) / 5) + 1
         forge["state"] = "Discovered"
 
     grid_num = int(grid_id)
@@ -151,14 +172,13 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
         spawned_enemies = []
         for _ in range(num_enemies):
             attempts = 0
-            while attempts < 50:  # Prevent infinite loops
-                x = random.randint(1, cols - 2)
-                y = random.randint(1, rows - 2)
+            while attempts < 50:
+                ex = random.randint(1, cols - 2)
+                ey = random.randint(1, rows - 2)
                 el = random.randint(10, 14)
                 
-                # Can spawn on empty space, coins, or question marks
-                if grid[y][x] in [' ', 'o', '?']:
-                    enemy = Enemy(x, y, el)
+                if grid[ey][ex] in [' ', 'o', '?']:
+                    enemy = Enemy(ex, ey, el)
                     spawned_enemies.append(enemy)
                     break
                 
@@ -174,110 +194,101 @@ def change_grid(deltax, deltay, x, y, prevx, prevy, grid_id, grid, gamefile, for
         new_enemies = spawn_enemies_in_grid(grid, enemy_level, enemies[grid_id])
         enemies[grid_id].extend(new_enemies)
 
-    # Add scattered '?' symbols (around 5)
+    # Add scattered '?' symbols
     if random.random() <= 0.1:
-        num_question_marks = random.randint(2, 5)  # Around 5 ? symbols
+        num_question_marks = random.randint(2, 5)
         for _ in range(num_question_marks):
             attempts = 0
-            while attempts < 100:  # Prevent infinite loops
-                x = random.randint(1, grid_size[0] - 2)  # Avoid borders
-                y = random.randint(1, grid_size[1] - 2)  # Avoid borders
-                if grid[y][x] == ' ':  # Only place if cell is empty
-                    grid[y][x] = '?'
+            while attempts < 100:
+                qx = random.randint(1, grid_size[0] - 2)
+                qy = random.randint(1, grid_size[1] - 2)
+                if grid[qy][qx] == ' ':
+                    grid[qy][qx] = '?'
                     break
                 attempts += 1
     
+    # Add coin bunches
     if random.random() <= 0.1:
-        # Add bunches of 'o' (around 6 total)
-        total_o_target = random.randint(3, 6)  # Around 6 o symbols
+        total_o_target = random.randint(3, 6)
         placed_o = 0
-
-        # Create 2-4 bunches to reach the target
         num_bunches = random.randint(2, 4)
+        
         for bunch_num in range(num_bunches):
             if placed_o >= total_o_target:
                 break
                 
-            # Simple bunch size calculation
             remaining_o = total_o_target - placed_o
             remaining_bunches = num_bunches - bunch_num
             
-            # Ensure we have a reasonable bunch size
             min_bunch = max(1, remaining_o // remaining_bunches - 3)
             max_bunch = min(15, remaining_o + 5)
             bunch_size = random.randint(min_bunch, max_bunch)
             
-            # Choose center position (avoiding borders)
             center_x = random.randint(2, grid_size[0] - 3)
             center_y = random.randint(2, grid_size[1] - 3)
         
-            # Create clustered bunch around center
             for _ in range(bunch_size):
                 if placed_o >= total_o_target:
                     break
                     
                 attempts = 0
-                while attempts < 50:  # Prevent infinite loops
+                while attempts < 50:
                     offset_x = random.randint(-3, 3)
                     offset_y = random.randint(-3, 3)
-                    x = center_x + offset_x
-                    y = center_y + offset_y
+                    ox = center_x + offset_x
+                    oy = center_y + offset_y
                     
-                    # Ensure within safe bounds (not on borders)
-                    if 1 <= x < grid_size[0] - 1 and 1 <= y < grid_size[1] - 1:
-                        if grid[y][x] == ' ':  # Only place if cell is empty
-                            grid[y][x] = 'o'
+                    if 1 <= ox < grid_size[0] - 1 and 1 <= oy < grid_size[1] - 1:
+                        if grid[oy][ox] == ' ':
+                            grid[oy][ox] = 'o'
                             placed_o += 1
                             break
                     
                     attempts += 1 
 
-
-    if deltax > 0:
-        x = 0
-    elif deltax < 0:
-        x = grid_size[0] - 1
-    elif deltay > 0:
-        y = 0
-    elif deltay < 0:
-        y = grid_size[1] - 1
-
-    x = min(x, grid_size[0] - 1)
-    y = min(y, grid_size[1] - 1)
-
-    prevx, prevy = -1, -1
-    return x, y, prevx, prevy, grid_id, grid, grid_size, gamefile
+    return new_x, new_y, -1, -1, grid_id, grid, grid_size, gamefile
 
 def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, health, enemies=[], cleared=False, got_item=None, equipped="", combat_log=None):
-    if cleared == True:
+    if cleared:
         stdscr.clear()
-    if prevx >= 0 and prevy >= 0:
-        grid[prevy][prevx] = ' '
-    grid[y][x] = '0'
+
+    if prevx >= 0 and prevy >= 0 and (prevx != x or prevy != y):
+        if 0 <= prevy < len(grid) and 0 <= prevx < len(grid[0]):
+            grid[prevy][prevx] = ' '
+
     display_grid = [row[:] for row in grid]
+
+    if 0 <= y < len(display_grid) and 0 <= x < len(display_grid[0]):
+        display_grid[y][x] = '0'
+
     for enemy in enemies:
         if enemy.status != "Dead":
-            display_grid[enemy.y][enemy.x] = 'E'
+            if 0 <= enemy.y < len(display_grid) and 0 <= enemy.x < len(display_grid[0]):
+                display_grid[enemy.y][enemy.x] = 'E'
+
     for i in range(grid_size[1]):
-        stdscr.addstr(i+1,0,"|")
-        stdscr.addstr(i+1,grid_size[0]+1,"|")
+        stdscr.addstr(i+1, 0, "|")
+        stdscr.addstr(i+1, grid_size[0]+1, "|")
         for j in range(grid_size[0]):
-            stdscr.addstr(0,j+1,"-")
-            stdscr.addstr(grid_size[1]+1,j+1,"-")
-            stdscr.addstr(i+1,j+1,display_grid[i][j])
-    stdscr.addstr(grid_size[1]+3,0,f"Grid: {((int(grid_id)-1)%5)+1}, {math.floor((int(grid_id)-1)/5)+1}")
-    stdscr.addstr(grid_size[1]+4,0,f"Coins: {coins}")
-    stdscr.addstr(grid_size[1]+5,0,f"Equipped: {equipped}")
-    stdscr.addstr(grid_size[1]+6,0,f"Atk: {atk} | Health: {health} | Armor: {armor}")
-    stdscr.addstr(grid_size[1]+9,0,"wasd/arrows:move | q:quit | i:inventory | enter:action")
+            stdscr.addstr(0, j+1, "-")
+            stdscr.addstr(grid_size[1]+1, j+1, "-")
+            stdscr.addstr(i+1, j+1, display_grid[i][j])
+    
+    stdscr.addstr(grid_size[1]+3, 0, f"Grid: {((int(grid_id)-1)%5)+1}, {math.floor((int(grid_id)-1)/5)+1}")
+    stdscr.addstr(grid_size[1]+4, 0, f"Coins: {coins}")
+    stdscr.addstr(grid_size[1]+5, 0, f"Equipped: {equipped}")
+    stdscr.addstr(grid_size[1]+6, 0, f"Atk: {atk} | Health: {health} | Armor: {armor}")
+    stdscr.addstr(grid_size[1]+9, 0, "wasd/arrows:move | q:quit | i:inventory | enter:action")
+    
     if forge["state"] == "Discovered":
-        stdscr.addstr(grid_size[1]+7,0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
+        stdscr.addstr(grid_size[1]+7, 0, f'Forge: {forge["gridx"]}, {forge["gridy"]}')
     if got_item:
-        stdscr.addstr(grid_size[1]+10,0,f"{got_item} has been acquired!")
+        stdscr.addstr(grid_size[1]+10, 0, f"{got_item} has been acquired!")
     if combat_log:
         for i, log_entry in enumerate(combat_log):
             if i < 3:
-                stdscr.addstr(grid_size[1]+11+i,0,log_entry)
+                stdscr.addstr(grid_size[1]+11+i, 0, log_entry)
+    
     stdscr.refresh()
 
 def serialize_enemies(enemies):
@@ -286,7 +297,7 @@ def serialize_enemies(enemies):
     for grid_id, enemy_list in enemies.items():
         serialized[grid_id] = []
         for enemy in enemy_list:
-            if enemy.status != "Dead":  # Only save living enemies
+            if enemy.status != "Dead":
                 serialized[grid_id].append({
                     "x": enemy.x,
                     "y": enemy.y,
