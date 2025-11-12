@@ -361,14 +361,6 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
     grid_id = gamefile["curr_grid"]
     grid_size = [len(gamefile["grids"][grid_id][0]), len(gamefile["grids"][grid_id])]
     grid = gamefile["grids"][grid_id]
-    
-    # Initialize vendor
-    if "vendor" not in gamefile:
-        vendor_location = random.randint(5, 35)  # Vendor appears somewhere between level 5-35
-        gamefile["vendor"] = {
-            "loc": str(vendor_location),
-            "state": "Undiscovered"
-        }
     vendor = gamefile["vendor"]
 
     curses.noecho()
@@ -524,10 +516,11 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                     prevx, prevy = x, y
                     x, y = target_x, target_y
 
-        elif key == ord("v") and vendor["state"] == "Discovered":
-            inv, coins = start_vendor(stdscr, inv, coins)
-            essentials = [e for e in essentials if e in inv]
-            clear_grid = True
+        elif key == ord("v"):
+            if ascension_data["unlocks"]["fast_access"] and vendor["state"] == "Discovered":
+                inv, coins = start_vendor(stdscr, inv, coins)
+                essentials = [e for e in essentials if e in inv]
+                clear_grid = True
 
         # Inventory Menu
         elif key == ord('i'):
