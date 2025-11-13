@@ -8,6 +8,7 @@ from settlement import (
     initialize_settlement_system, check_settler_interactions, update_all_settlers,
     serialize_settlement_data, deserialize_settlement_data, House, create_settler
 )
+from vendor import start_vendor
 
 def add_coins(coins):
     coins += random.randint(10, 30)
@@ -436,7 +437,7 @@ def start_settlements(stdscr, inv, essentials, health, coins, equipped):
                 
                 # Handle vendor interaction
                 if settler_result.get("open_vendor", False):
-                    combat_log.append("Vendor interaction - coming soon!")
+                    inv, coins = start_vendor(stdscr, inv, coins, loc="settlements")
                 
                 clear_grid = True
             else:

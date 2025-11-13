@@ -291,7 +291,7 @@ def handle_settler_interaction(settler: Settler, player_x: int, player_y: int) -
     result["log"].append(f"Settler: \"{greeting}\"")
     
     # Chance for gift
-    if random.random() < 0.10:  # 10% chance
+    if random.random() < 0.10:
         gift_items = ["Tree Starter", "Ore Starter"]
         gift_item = random.choice(gift_items)
         gift_amount = random.randint(1, 3)
@@ -386,7 +386,7 @@ def initialize_settlement_system(gamefile: Dict) -> Tuple[Dict[str, List[House]]
     settlers = {}
     settler_count = 0
     
-    for grid_id in [str(i) for i in range(1, 10)]:  # Changed from 1-21 to 1-9
+    for grid_id in [str(i) for i in range(1, 10)]:
         houses[grid_id] = []
         grid = gamefile["grids"][grid_id]
         

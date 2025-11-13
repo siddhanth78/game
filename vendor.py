@@ -2,12 +2,16 @@ import curses
 from inventory import add_to_inv
 import math
 
-all_goods = [
+depths_goods = [
     "0. Radon: 1000 coins",
     "1. Potion: 200 coins",
-    "2. Wood: 1 coins",
-    "3. Iron: 1 coins",
-    "4. Super Seed: 5 Radon"
+    "2. Super Seed: 5 Radon"
+]
+
+settlements_goods = [
+    "0. House: 500 Wood | 500 Iron | 50 Spark",
+    "1. Garden: 10 Potion | 20 Spark | 5 Super Seed",
+    "2. Ore Shaft: 10 Potion | 20 Spark | 5 Super Seed"
 ]
 
 def update_vendor(stdscr, inv, coins, sel_len, selected_items, selected_items_quant, c, total_req, reqcoins, catalogue, status = ""):
@@ -65,7 +69,7 @@ def check_purchase(selected_items, selected_items_quant, total_req, inv, reqcoin
     coins -= reqcoins
     return "Purchased!", inv, coins
 
-def vendor_shop(stdscr, inv, coins):
+def vendor_shop(stdscr, inv, coins, loc):
     selected_items = []
     selected_items_quant = []
     c = 0
@@ -73,7 +77,16 @@ def vendor_shop(stdscr, inv, coins):
     total_req = {
         "Potion": 0,
         "Radon": 0,
+        "Wood": 0,
+        "Iron": 0,
+        "Spark": 0,
+        "Super Seed": 0
     }
+    if loc == "depths":
+        all_goods = depths_goods
+    elif loc == "settlements":
+        all_goods = settlements_goods
+
     update_vendor(stdscr, inv, coins, len(selected_items), selected_items, selected_items_quant, c, total_req, reqcoins, all_goods)
     while True:
         status = ""
@@ -93,6 +106,14 @@ def vendor_shop(stdscr, inv, coins):
                         total_req["Potion"] += int(sr.split(" ")[0])
                     elif "Radon" in sr:
                         total_req["Radon"] += int(sr.split(" ")[0])
+                    elif "Wood" in sr:
+                        total_req["Wood"] += int(sr.split(" ")[0])
+                    elif "Iron" in sr:
+                        total_req["Iron"] += int(sr.split(" ")[0])
+                    elif "Spark" in sr:
+                        total_req["Spark"] += int(sr.split(" ")[0])
+                    elif "Super Seed" in sr:
+                        total_req["Super Seed"] += int(sr.split(" ")[0])
                     elif "coins" in sr:
                         reqcoins += int(sr.split(" ")[0])
 
@@ -108,6 +129,14 @@ def vendor_shop(stdscr, inv, coins):
                     total_req["Potion"] -= int(sr.split(" ")[0])*del_q
                 elif "Radon" in sr:
                     total_req["Radon"] -= int(sr.split(" ")[0])*del_q
+                elif "Wood" in sr:
+                    total_req["Wood"] -= int(sr.split(" ")[0])*del_q
+                elif "Iron" in sr:
+                    total_req["Iron"] -= int(sr.split(" ")[0])*del_q
+                elif "Spark" in sr:
+                    total_req["Spark"] -= int(sr.split(" ")[0])*del_q
+                elif "Super Seed" in sr:
+                    total_req["Super Seed"] -= int(sr.split(" ")[0])*del_q
                 elif "coins" in sr:
                     reqcoins -= int(sr.split(" ")[0])*del_q
             if c >= len(selected_items):
@@ -133,6 +162,14 @@ def vendor_shop(stdscr, inv, coins):
                     total_req["Potion"] += int(sr.split(" ")[0])
                 elif "Radon" in sr:
                     total_req["Radon"] += int(sr.split(" ")[0])
+                elif "Wood" in sr:
+                    total_req["Wood"] += int(sr.split(" ")[0])
+                elif "Iron" in sr:
+                    total_req["Iron"] += int(sr.split(" ")[0])
+                elif "Spark" in sr:
+                    total_req["Spark"] += int(sr.split(" ")[0])
+                elif "Super Seed" in sr:
+                    total_req["Super Seed"] += int(sr.split(" ")[0])
                 elif "coins" in sr:
                     reqcoins += int(sr.split(" ")[0])
         elif (key == ord('n') or key == curses.KEY_LEFT) and selected_items != []:
@@ -151,6 +188,14 @@ def vendor_shop(stdscr, inv, coins):
                         total_req["Potion"] -= int(sr.split(" ")[0])
                     elif "Radon" in sr:
                         total_req["Radon"] -= int(sr.split(" ")[0])
+                    elif "Wood" in sr:
+                        total_req["Wood"] -= int(sr.split(" ")[0])
+                    elif "Iron" in sr:
+                        total_req["Iron"] -= int(sr.split(" ")[0])
+                    elif "Spark" in sr:
+                        total_req["Spark"] -= int(sr.split(" ")[0])
+                    elif "Super Seed" in sr:
+                        total_req["Super Seed"] -= int(sr.split(" ")[0])
                     elif "coins" in sr:
                         reqcoins -= int(sr.split(" ")[0])
         
@@ -163,6 +208,10 @@ def vendor_shop(stdscr, inv, coins):
             total_req = {
                 "Potion": 0,
                 "Radon": 0,
+                "Wood": 0,
+                "Iron": 0,
+                "Spark": 0,
+                "Super Seed": 0
             }
             reqcoins = 0
 
@@ -172,6 +221,6 @@ def vendor_shop(stdscr, inv, coins):
         
         update_vendor(stdscr, inv, coins, len(selected_items), selected_items, selected_items_quant, c, total_req, reqcoins, all_goods, status)
 
-def start_vendor(stdscr, inv, coins):
-    inv, coins = vendor_shop(stdscr, inv, coins)
+def start_vendor(stdscr, inv, coins, loc="depths"):
+    inv, coins = vendor_shop(stdscr, inv, coins, loc)
     return inv, coins
