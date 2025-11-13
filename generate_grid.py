@@ -128,6 +128,7 @@ def generate():
         gjson[str(i)] = grid
         
     gjson["20"][-1][-1] = '>'
+    gjson["1"][-1][0] = '<'
 
     inv = {"Axe": 1, "Pickaxe": 1}
     cl = 0

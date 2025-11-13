@@ -794,6 +794,13 @@ def main(stdscr):
             inv, coins = start_forge(stdscr, inv, coins)
             essentials = [e for e in essentials if e in inv]
             clear_grid = True
+        elif grid[y][x] == "<":
+            x = prevx
+            y = prevy
+            if ascension_data["unlocks"]["settlements"] == False:
+                combat_log = ["Ascension Level 2 required to proceed"]
+            elif ascension_data["unlocks"]["settlements"] == True:
+                pass
         elif grid[y][x] == ">":
             x = prevx
             y = prevy

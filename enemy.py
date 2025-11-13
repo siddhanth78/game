@@ -124,7 +124,7 @@ class Enemy:
         
         # Enemy can walk on empty spaces, eat 'o' and '?' and '+', but blocked by obstacles
         # Obstacles: F, D, M, m, *, T, V
-        obstacles = {'F', 'D', 'M', 'm', '*', 'T', 'V'}
+        obstacles = {'F', 'D', 'M', 'm', '*', 'T', 'V', '<', '>'}
         
         return cell not in obstacles
 
