@@ -67,8 +67,8 @@ def ascend_player(ascension_data):
 def unlock_ascension_feature(ascension_data, level):
     """Unlock features based on ascension level"""
     unlock_messages = {
-        1: ("Fast Access Unlocked! (f/v keys)", "fast_access"),
-        2: ("Settlements Unlocked!", "settlements"),
+        1: ("Settlements Unlocked!", "settlements"),
+        2: ("Fast Access Unlocked! (f/v keys)", "fast_access"),
         3: ("Checkpoints Unlocked! (c to place, t to teleport)", "checkpoints"),
         4: ("Rare Enemies Unlocked!", "rare_enemies"),
         5: ("Sky World Unlocked!", "sky_world")

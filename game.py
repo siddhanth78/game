@@ -798,7 +798,7 @@ def main(stdscr):
             x = prevx
             y = prevy
             if ascension_data["unlocks"]["settlements"] == False:
-                combat_log = ["Ascension Level 2 required to proceed"]
+                combat_log = ["Ascension Level 1 required to proceed"]
             elif ascension_data["unlocks"]["settlements"] == True:
                 pass
         elif grid[y][x] == ">":
