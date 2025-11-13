@@ -487,6 +487,10 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                             if drops:
                                 drop_text = ", ".join(drops)
                                 combat_log.append(f"Enemy dropped: {drop_text}!")
+                        if attack_result.get("boss_defeated", False):
+                            combat_log.append("Press 'Shift+A' to ascend once exited!")
+                            ascension_data["boss_kills"] += 1
+                            ascension_data = save_ascension_data(ascension_data)
                         clear_grid = True
             elif y <= 0:
                 x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(-1, x, y, prevx, prevy, grid_id, grid, gamefile, enemies, vendor, ascension_data)
@@ -517,6 +521,10 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                             if drops:
                                 drop_text = ", ".join(drops)
                                 combat_log.append(f"Enemy dropped: {drop_text}!")
+                        if attack_result.get("boss_defeated", False):
+                            combat_log.append("Press 'Shift+A' to ascend once exited!")
+                            ascension_data["boss_kills"] += 1
+                            ascension_data = save_ascension_data(ascension_data)
                         clear_grid = True
             elif y >= grid_size[1]-1:
                 x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(1, x, y, prevx, prevy, grid_id, grid, gamefile, enemies, vendor, ascension_data)
@@ -579,6 +587,10 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                             if drops:
                                 drop_text = ", ".join(drops)
                                 combat_log.append(f"Enemy dropped: {drop_text}!")
+                        if attack_result.get("boss_defeated", False):
+                            combat_log.append("Press 'Shift+A' to ascend once exited!")
+                            ascension_data["boss_kills"] += 1
+                            ascension_data = save_ascension_data(ascension_data)
                         clear_grid = True
             elif x >= grid_size[0]-1:
                 x,y = prevx, prevy

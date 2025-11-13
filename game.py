@@ -605,6 +605,18 @@ def main(stdscr):
 
                     gamefile = n_gamefile
 
+                    enemies = {}
+                    for grid_num in range(1, 20):
+                        enemies[str(grid_num)] = []
+                        if random.random() < 0.3:
+                            enemy_level = max(1, (grid_num - 1) // 4 + 1)
+                            enemy = spawn_enemy_in_grid(gamefile["grids"][str(grid_num)], enemy_level)
+                            if enemy:
+                                enemies[str(grid_num)].append(enemy)
+
+                    enemies["20"] = []
+                    gamefile["enemies"] = serialize_enemies(enemies)
+
                     grid = gamefile["grids"][grid_id]
                     grid_id = gamefile["curr_grid"]
                     x, y = gamefile["player"]
