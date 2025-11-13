@@ -598,7 +598,7 @@ def main(stdscr):
                     stdscr.clear()
                     stdscr.addstr(0, 0, "ASCENSION COMPLETE!")
                     stdscr.addstr(2, 0, "All progress reset. Starting fresh in the main world.")
-                    stdscr.addstr(3, 0, "Your new powers await...")
+                    stdscr.addstr(3, 0, "Lord Bastion accepts your sacrifice...")
                     stdscr.addstr(5, 0, "Press any key to return to main game...")
                     stdscr.refresh()
                     stdscr.getch()
