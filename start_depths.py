@@ -434,6 +434,7 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                     enemies[str(grid_num)].append(enemy)
 
         enemies["40"] = []
+        gamefile["enemies"] = serialize_enemies(enemies)
 
     player = Player(health)
     combat_log = None
@@ -460,61 +461,127 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
         clear_grid = False
         key = stdscr.getch()
 
-        if key in [ord('w'), ord('s'), ord('a'), ord('d'), curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]:
-            player.health += regen
-            if player.health > 300:
-                player.health = 300
-            
-            # Determine target position based on key
-            target_x, target_y = x, y
-            if key == ord('w') or key == curses.KEY_UP:
-                target_y = y - 1
-            elif key == ord('s') or key == curses.KEY_DOWN:
-                target_y = y + 1
-            elif key == ord('a') or key == curses.KEY_LEFT:
-                target_x = x - 1
-            elif key == ord('d') or key == curses.KEY_RIGHT:
-                target_x = x + 1
-            
-            # Check if target position has an enemy - if so, attack it
-            attack_result = check_adjacent_enemy_attack(enemies[grid_id], target_x, target_y, atk, player, armor)
-            
-            if attack_result.get("collision", False):
-                # Combat happened
-                combat_log = attack_result.get("log", [])
-                
-                if attack_result.get("player_died", False):
-                    (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
-                    death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
-                    combat_log = [death_message, "Respawned at starting location."]
-                    clear_grid = True
-                
-                if attack_result.get("enemy_died", False):
-                    coins += attack_result["coins_gained"]
-                    enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
-                    inv, drops = handle_enemy_death(inv, enemy_level)
-                    if drops:
-                        drop_text = ", ".join(drops)
-                        combat_log.append(f"Enemy dropped: {drop_text}!")
-                
-                if attack_result.get("boss_defeated", False):
-                    combat_log.append("Press 'Shift+A' to ascend once exited!")
-                    ascension_data["boss_kills"] += 1
-                    ascension_data = save_ascension_data(ascension_data)
-                
-                clear_grid = True
-            else:
-                # No enemy at target position, try to move there
-                if target_y < 0:  # Moving up, change grid
-                    x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(-1, x, y, prevx, prevy, grid_id, grid, gamefile, enemies, vendor, ascension_data)
-                    clear_grid = True
-                elif target_y >= grid_size[1]:  # Moving down, change grid  
-                    x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(1, x, y, prevx, prevy, grid_id, grid, gamefile, enemies, vendor, ascension_data)
-                    clear_grid = True
-                elif 0 <= target_x < grid_size[0] and 0 <= target_y < grid_size[1] and not is_position_blocked(target_x, target_y, enemies[grid_id]):
-                    # Valid move within grid
+        # Movement and attack
+        moved = False
+        if key == ord('w') or key == curses.KEY_UP:
+            if y > 0:
+                new_x, new_y = x, y - 1
+                if not is_position_blocked(new_x, new_y, enemies[grid_id]):
                     prevx, prevy = x, y
-                    x, y = target_x, target_y
+                    y = new_y
+                    moved = True
+                else:
+                    # Try to attack adjacent enemy instead
+                    attack_result = check_adjacent_enemy_attack(enemies[grid_id], x, y, atk, player, armor)
+                    if attack_result.get("collision", False):
+                        combat_log = attack_result.get("log", [])
+                        if attack_result.get("player_died", False):
+                            (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                            death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                            combat_log = [death_message, "Respawned at starting location."]
+                            clear_grid = True
+                        if attack_result.get("enemy_died", False):
+                            coins += attack_result["coins_gained"]
+                            enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                            inv, drops = handle_enemy_death(inv, enemy_level)
+                            if drops:
+                                drop_text = ", ".join(drops)
+                                combat_log.append(f"Enemy dropped: {drop_text}!")
+                        clear_grid = True
+            elif y <= 0:
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(-1, x, y, prevx, prevy, grid_id, grid, gamefile, enemies, vendor, ascension_data)
+                clear_grid = True
+                moved = True
+
+        elif key == ord('s') or key == curses.KEY_DOWN:
+            if y < grid_size[1]-1:
+                new_x, new_y = x, y + 1
+                if not is_position_blocked(new_x, new_y, enemies[grid_id]):
+                    prevx, prevy = x, y
+                    y = new_y
+                    moved = True
+                else:
+                    # Try to attack adjacent enemy instead
+                    attack_result = check_adjacent_enemy_attack(enemies[grid_id], x, y, atk, player, armor)
+                    if attack_result.get("collision", False):
+                        combat_log = attack_result.get("log", [])
+                        if attack_result.get("player_died", False):
+                            (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                            death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                            combat_log = [death_message, "Respawned at starting location."]
+                            clear_grid = True
+                        if attack_result.get("enemy_died", False):
+                            coins += attack_result["coins_gained"]
+                            enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                            inv, drops = handle_enemy_death(inv, enemy_level)
+                            if drops:
+                                drop_text = ", ".join(drops)
+                                combat_log.append(f"Enemy dropped: {drop_text}!")
+                        clear_grid = True
+            elif y >= grid_size[1]-1:
+                x, y, prevx, prevy, grid_id, grid, grid_size, gamefile = change_grid(1, x, y, prevx, prevy, grid_id, grid, gamefile, enemies, vendor, ascension_data)
+                clear_grid = True
+                moved = True
+
+        elif key == ord('a') or key == curses.KEY_LEFT:
+            if x > 0:
+                new_x, new_y = x - 1, y
+                if not is_position_blocked(new_x, new_y, enemies[grid_id]):
+                    prevx, prevy = x, y
+                    x = new_x
+                    moved = True
+                else:
+                    # Try to attack adjacent enemy instead
+                    attack_result = check_adjacent_enemy_attack(enemies[grid_id], x, y, atk, player, armor)
+                    if attack_result.get("collision", False):
+                        combat_log = attack_result.get("log", [])
+                        if attack_result.get("player_died", False):
+                            (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                            death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                            combat_log = [death_message, "Respawned at starting location."]
+                            clear_grid = True
+                        if attack_result.get("enemy_died", False):
+                            coins += attack_result["coins_gained"]
+                            enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                            inv, drops = handle_enemy_death(inv, enemy_level)
+                            if drops:
+                                drop_text = ", ".join(drops)
+                                combat_log.append(f"Enemy dropped: {drop_text}!")
+                        if attack_result.get("boss_defeated", False):
+                            combat_log.append("Press 'Shift+A' to ascend once exited!")
+                            ascension_data["boss_kills"] += 1
+                            ascension_data = save_ascension_data(ascension_data)
+                        clear_grid = True
+            elif x <= 0:
+                x,y = prevx, prevy
+
+        elif key == ord('d') or key == curses.KEY_RIGHT:
+            if x < grid_size[0]-1:
+                new_x, new_y = x + 1, y
+                if not is_position_blocked(new_x, new_y, enemies[grid_id]):
+                    prevx, prevy = x, y
+                    x = new_x
+                    moved = True
+                else:
+                    # Try to attack adjacent enemy instead
+                    attack_result = check_adjacent_enemy_attack(enemies[grid_id], x, y, atk, player, armor)
+                    if attack_result.get("collision", False):
+                        combat_log = attack_result.get("log", [])
+                        if attack_result.get("player_died", False):
+                            (coins, x, y, prevx, prevy, grid_id, grid, grid_size, 
+                            death_message) = handle_player_death(player, coins, grid_id, x, y, prevx, prevy, grid, gamefile)
+                            combat_log = [death_message, "Respawned at starting location."]
+                            clear_grid = True
+                        if attack_result.get("enemy_died", False):
+                            coins += attack_result["coins_gained"]
+                            enemy_level = max(1, (int(grid_id) - 1) // 4 + 1)
+                            inv, drops = handle_enemy_death(inv, enemy_level)
+                            if drops:
+                                drop_text = ", ".join(drops)
+                                combat_log.append(f"Enemy dropped: {drop_text}!")
+                        clear_grid = True
+            elif x >= grid_size[0]-1:
+                x,y = prevx, prevy
 
         elif key == ord("v"):
             if ascension_data["unlocks"]["fast_access"] and vendor["state"] == "Discovered":
@@ -676,6 +743,11 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                     enemy.alert(grid, x, y)
                 elif enemy.status == "Roam":
                     enemy.roam(grid)
+
+        if moved == True:
+            player.health += regen
+            if player.health > 300:
+                player.health = 300
 
         update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, vendor, atk, armor, player.health,
                       enemies[grid_id], cleared=clear_grid, got_item=item, equipped=equipped, combat_log=combat_log, ascension_data=ascension_data)

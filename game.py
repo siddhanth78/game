@@ -414,6 +414,7 @@ def main(stdscr):
                     enemies[str(grid_num)].append(enemy)
 
         enemies["20"] = []
+        gamefile["enemies"] = serialize_enemies(enemies)
 
     player = Player(health)
     combat_log = None
@@ -825,6 +826,11 @@ def main(stdscr):
 
         if enemies[grid_id] == [] and grid_id == "20":
             cl20 = 1
+
+        if moved == True:
+            player.health += regen
+            if player.health > 300:
+                player.health = 300
 
         update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, forge, atk, armor, player.health, enemies[grid_id], cleared=clear_grid, got_item=item, equipped=equipped, combat_log=combat_log, ascension_data=ascension_data)
         if item:

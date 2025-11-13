@@ -369,7 +369,7 @@ def handle_player_enemy_collision(player, enemy, player_damage: int, player_armo
             }
         else:
             # Normal retaliation - apply armor reduction
-            raw_damage = enemy.attack
+            raw_damage = int(enemy.attack)
             actual_damage = max(0, raw_damage - player_armor)
             
             player.health -= actual_damage
