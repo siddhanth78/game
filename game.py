@@ -574,15 +574,45 @@ def main(stdscr):
                 ascension_data = save_ascension_data(ascension_data)
                 
                 if reset_needed:
+                    n_inv = {"Axe": 1, "Pickaxe": 1}
+                    if ascension_data["level"] == 1:
+                        n_inv["Big Sword"] = 1
+                        n_inv["Big Shield"] = 1
+                        n_inv["Radon"] = 10
+                        n_inv["Potion"] = 10
+                    elif ascension_data["level"] == 2:
+                        n_inv["Epic Sword"] = 1
+                        n_inv["Epic Shield"] = 1
+                        n_inv["Radon"] = 10
+                        n_inv["Potion"] = 20
+                        n_inv["Spark"] = 10
+                    elif ascension_data["level"] == 3:
+                        n_inv["Epic Sword"] = 1
+                        n_inv["Epic Shield"] = 1
+                        n_inv["Radon"] = 10
+                        n_inv["Potion"] = 25
+                        n_inv["Spark"] = 20
+                    elif ascension_data["level"] == 4:
+                        n_inv["Epic Sword"] = 1
+                        n_inv["Epic Shield"] = 1
+                        n_inv["Radon"] = 15
+                        n_inv["Potion"] = 30
+                        n_inv["Spark"] = 30
+                    elif ascension_data["level"] == 5:
+                        n_inv["Godly Sword"] = 1
+                        n_inv["Godly Shield"] = 1
+                        n_inv["Radon"] = 50
+                        n_inv["Potion"] = 50
+                        n_inv["Spark"] = 50
                     n_gamefile = {
-                        "grids": gamefile.get("grids", {}),
+                        "grids": gamefile["grids"],
                         "curr_grid": "1",
                         "player": [0, 0],
-                        "inventory": {"Axe": 1, "Pickaxe": 1, "Spark": inv.get("Spark", 1)},
+                        "inventory": n_inv,
                         "coins": 0,
                         "health": 300,
                         "attack": 1,
-                        "forge": gamefile.get("forge", {"state": "Undiscovered", "loc": "2", "gridx": 1, "gridy": 1}),
+                        "forge": gamefile["forge"],
                         "equipped": "",
                         "essentials": [],
                         "mills": gamefile.get("mills", {}),

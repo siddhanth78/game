@@ -42,15 +42,15 @@ class Enemy:
             # Cycle through modes: alert -> shell -> rest -> alert
             if self.boss_mode == "alert":
                 self.boss_mode = "shell"
-                self.mode_duration = 10
+                self.mode_duration = 5
                 messages.append("Boss enters SHELL mode! (Damage immunity)")
             elif self.boss_mode == "shell":
                 self.boss_mode = "rest"
                 self.mode_duration = 2
-                messages.append("Boss enters REST mode! (2x damage vulnerability)")
+                messages.append("Boss enters REST mode! (1.5x damage vulnerability)")
             elif self.boss_mode == "rest":
                 self.boss_mode = "alert"
-                self.mode_duration = 8
+                self.mode_duration = 10
                 messages.append("Boss enters ALERT mode! (Normal behavior)")
         
         return messages
@@ -79,7 +79,7 @@ class Enemy:
         mode_descriptions = {
             "alert": "ALERT - Normal behavior",
             "shell": "SHELL - Immune to damage", 
-            "rest": "REST - Takes 2x damage"
+            "rest": "REST - Takes 1.5x damage"
         }
         
         remaining_moves = self.mode_duration - self.mode_timer
@@ -329,7 +329,7 @@ def handle_player_enemy_collision(player, enemy, player_damage: int, player_armo
         combat_log.append(f"Attack blocked by shell! No damage dealt.")
         enemy_died = False
     elif enemy.is_final_boss and enemy.boss_mode == "rest":
-        actual_damage = player_damage * 2
+        actual_damage = player_damage * 1.5
         enemy_died = enemy.received_damage(player_damage)
         combat_log.append(f"Critical hit! {actual_damage} damage dealt!")
     else:

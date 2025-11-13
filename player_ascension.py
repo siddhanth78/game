@@ -57,7 +57,7 @@ def ascend_player(ascension_data):
             messages.append(unlock_message)
         
         # Trigger full reset
-        messages.append("All progress reset - starting fresh with new powers!")
+        messages.append("Progress reset. New features unlocked!")
         reset_needed = True
         
         return messages, reset_needed, ascension_data

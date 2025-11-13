@@ -561,7 +561,7 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                             ascension_data = save_ascension_data(ascension_data)
                         clear_grid = True
             elif x <= 0:
-                x,y = prevx, prevy
+                x,y = 0, y
 
         elif key == ord('d') or key == curses.KEY_RIGHT:
             if x < grid_size[0]-1:
@@ -593,7 +593,7 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
                             ascension_data = save_ascension_data(ascension_data)
                         clear_grid = True
             elif x >= grid_size[0]-1:
-                x,y = prevx, prevy
+                x,y = grid_size[0]-1, y
 
         elif key == ord("v"):
             if ascension_data["unlocks"]["fast_access"] and vendor["state"] == "Discovered":

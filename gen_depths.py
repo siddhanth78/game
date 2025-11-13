@@ -1,7 +1,7 @@
 import json
 import random
 
-DEV = True
+DEV = False
 
 def generate():
     gjson = dict()
