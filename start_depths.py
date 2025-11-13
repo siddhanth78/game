@@ -295,7 +295,7 @@ def update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id, coins, v
     stdscr.addstr(grid_size[1]+5, 0, f"Equipped: {equipped}")
     stdscr.addstr(grid_size[1]+6, 0, f"Atk: {atk} | Health: {health} | Armor: {armor}")
 
-    bar = "wasd/arrows:move | q:quit | i:inventory | enter:action | j/k:switch"
+    bar = "wasd/arrows:move | q:exit | i:inventory | enter:action | j/k:switch"
     
     if vendor["state"] == "Discovered":
         stdscr.addstr(grid_size[1]+7, 0, f'Vendor: Level {vendor["loc"]}')
@@ -353,7 +353,7 @@ class Player:
     def __init__(self, health):
         self.health = health
 
-def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, ascension_data):
+def start_depths(stdscr, atk, health, coins, inv, equipped, essentials, ascension_data):
 
     with open("depths.json", "r") as file:
         gamefile = json.load(file)
@@ -624,33 +624,16 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
 
         # Exit
         elif key == ord('q'):
+            grid[y][x] = ' '
             gamefile["grids"][grid_id] = grid
             gamefile["curr_grid"] = grid_id
             gamefile["vendor"] = vendor
             gamefile["enemies"] = serialize_enemies(enemies)
-
             ascension_data = save_ascension_data(ascension_data)
-
             with open("depths.json", "w") as f:
                 json.dump(gamefile, f)
 
-            with open("grids.json", "r") as file:
-                main_game = json.load(file)
-
-            main_game["inventory"] = inv
-            main_game["coins"] = coins
-            main_game["equipped"] = equipped
-            main_game["essentials"] = essentials
-            main_game["health"] = player.health
-            main_game["attack"] = atk
-            main_game["player"] = [mx, my]
-            
-            # Save ascension data
-            ascension_data = save_ascension_data(ascension_data)
-            
-            with open("grids.json", "w") as f:
-                json.dump(main_game, f)
-            sys.exit(0)
+            return atk, player.health, coins, inv, equipped, essentials, ascension_data
        
         if grid[y][x] == "o":
             coins = add_coins(coins)
@@ -693,19 +676,6 @@ def start_depths(mx, my,stdscr, atk, health, coins, inv, equipped, essentials, a
             inv, coins = start_vendor(stdscr, inv, coins)
             essentials = [e for e in essentials if e in inv]
             clear_grid = True
-        elif grid[y][x] == ">":
-            x = prevx
-            y = prevy
-            gamefile["grids"][grid_id] = grid
-            gamefile["curr_grid"] = grid_id
-            gamefile["vendor"] = vendor
-            gamefile["enemies"] = serialize_enemies(enemies)
-            ascension_data = save_ascension_data(ascension_data)
-            with open("depths.json", "w") as f:
-                json.dump(gamefile, f)
-            
-            # Return values to main game
-            return atk, player.health, coins, inv, equipped, essentials, ascension_data
 
         if equipped == "Sword":
             atk = 10

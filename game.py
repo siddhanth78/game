@@ -10,6 +10,7 @@ from enemy import Enemy, spawn_enemy_in_grid, check_adjacent_enemy_attack
 from start_depths import start_depths
 from player_ascension import load_ascension_data, ascend_player, save_ascension_data, get_ascension_display_info
 import gen_depths
+from start_settlements import start_settlements
 
 def add_coins(coins):
     coins += random.randint(10, 30)
@@ -580,6 +581,8 @@ def main(stdscr):
                         n_inv["Big Shield"] = 1
                         n_inv["Radon"] = 10
                         n_inv["Potion"] = 10
+                        n_inv["Spark"] = 10
+                        n_inv["House"] = 2
                     elif ascension_data["level"] == 2:
                         n_inv["Epic Sword"] = 1
                         n_inv["Epic Shield"] = 1
@@ -646,10 +649,9 @@ def main(stdscr):
 
                     enemies["20"] = []
                     gamefile["enemies"] = serialize_enemies(enemies)
-
+                    grid_id = "1"
                     grid = gamefile["grids"][grid_id]
-                    grid_id = gamefile["curr_grid"]
-                    x, y = gamefile["player"]
+                    x, y = 0, 0
                     inv = gamefile["inventory"]
                     coins = gamefile["coins"]
                     forge = gamefile["forge"]
@@ -800,31 +802,15 @@ def main(stdscr):
             if ascension_data["unlocks"]["settlements"] == False:
                 combat_log = ["Ascension Level 1 required to proceed"]
             elif ascension_data["unlocks"]["settlements"] == True:
-                pass
+                inv, essentials, player.health, coins, equipped = start_settlements(stdscr, inv, essentials, player.health, coins, equipped)
+                clear_grid = True
         elif grid[y][x] == ">":
             x = prevx
             y = prevy
             if cl20 == 0:
                 combat_log = ["Clear zone to proceed"]
             else:
-                gamefile["grids"][grid_id] = grid
-                gamefile["curr_grid"] = grid_id
-                gamefile["player"] = [x,y]
-                gamefile["inventory"] = inv
-                gamefile["coins"] = coins
-                gamefile["forge"] = forge
-                gamefile["equipped"] = equipped
-                gamefile["essentials"] = essentials
-                gamefile["mills"] = mills
-                gamefile["health"] = player.health
-                gamefile["attack"] = atk
-                gamefile["enemies"] = serialize_enemies(enemies)
-                gamefile["clear_20"] = cl20
-
-                with open("grids.json", "w") as f:
-                    json.dump(gamefile, f)
-
-                returned_values = start_depths(x,y,stdscr, atk, player.health, coins, inv, equipped, essentials, ascension_data)
+                returned_values = start_depths(stdscr, atk, player.health, coins, inv, equipped, essentials, ascension_data)
                 if returned_values:
                     atk, player.health, coins, inv, equipped, essentials, ascension_data = returned_values
                     

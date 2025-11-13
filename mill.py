@@ -340,5 +340,8 @@ def place_mill(stdscr, eq, mills, grid_id, grid, grid_size, inv):
         elif grid[y][x] == ">":
             x = prevx
             y = prevy
+        elif grid[y][x] == "<":
+            x = prevx
+            y = prevy
 
         update_screen(stdscr, x, y, prevx, prevy, grid, grid_size, grid_id)

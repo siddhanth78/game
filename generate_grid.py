@@ -1,9 +1,7 @@
 import json
 import random
 
-DEV = False
-
-def generate():
+def generate(DEV = False):
     gjson = dict()
     flag = False
     forge = None
