@@ -1,5 +1,5 @@
 import curses
-from inventory import open_inventory, add_to_inventory
+from inventory import open_inventory
 import sys
 import json
 
