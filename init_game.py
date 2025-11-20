@@ -9,3 +9,36 @@ pl_inv["inventory_grid"] = inv_grid
 pl_inv["inventory"] = inv
 with open("player_inv.json", "w") as file:
     json.dump(pl_inv, file, indent=2)
+
+art = {
+    "Sword":
+    ["  /\\  ",
+     " /  \\ ",
+     " |  | ",
+     " |  | ",
+     "------",
+     "  ||  ",
+     "  --  "],
+
+    "Shield":
+    ["/-----\\",
+     "\\     /",
+     " \\___/ "],
+
+    "Axe":
+    [" /|\\___/|\\ ",
+     "| |     | |",
+     " \\|/---\\|/ ",
+     "    | |    ",
+     "    | |    ",
+     "    |_|    "],
+
+     "Pickaxe":
+    [" ______ ",
+     "/  ||  \\",
+     "   ||   ",
+     "   ||   "]
+}
+
+with open("item_art.json", "w") as file_:
+    json.dump(art, file_, indent=2)
