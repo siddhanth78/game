@@ -14,7 +14,7 @@ def load_inventory(stdscr, inv_grid):
             stdscr.addstr(i, j, inv_grid[i][j])
     stdscr.refresh()
 
-def update(stdscr, display, place, status, items, curr):
+def update(stdscr, display, place, status, items, curr, inv):
     stdscr.erase()
     c = 0
     for i in range(len(display)):
@@ -22,9 +22,9 @@ def update(stdscr, display, place, status, items, curr):
             stdscr.addstr(i, j, display[i][j])
         if c <= len(items)-1:
             if c == curr:
-                disp_inv_text = f"> {items[c]}"
+                disp_inv_text = f"> {items[c]}: Lvl {inv[items[c]]["level"]}"
             else:
-                disp_inv_text = f"{items[c]}"
+                disp_inv_text = f"{items[c]}: Lvl {inv[items[c]]["level"]}"
             stdscr.addstr(i, j+5, disp_inv_text)
         c += 1
     if place == True:
@@ -113,6 +113,11 @@ def open_inventory(stdscr, inv, inv_grid):
                 c += 1
                 if c > len(inv)-1:
                     c = len(inv)-1
+                item = items[c]
+                height = len(art[items[c]])
+                width = len(art[items[c]][0])
+                top_left = [0,0]
+                bottom_right = [width-1, height-1]
         elif key == ord('a') or key == curses.KEY_LEFT:
             if place == True:
                 if top_left[0]-1 >= 0:
@@ -148,7 +153,7 @@ def open_inventory(stdscr, inv, inv_grid):
                 inv_grid, display, status = add_to_inventory(inv_grid, display, top_left, bottom_right, inv, item, art)
                 if status == "Placed item":
                     place = False
-        update(stdscr, display, place, status, items, c)
+        update(stdscr, display, place, status, items, c, inv)
 
 if __name__ == "__main__":
     curses.wrapper(open_inventory)

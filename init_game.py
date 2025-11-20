@@ -2,7 +2,7 @@ import json
 
 pl_inv = {}
 
-inv = {"Axe": {}, "Sword": {}, "Shield": {}}
+inv = {"Axe": {"level": 1}, "Sword": {"level": 1}, "Shield": {"level": 1}}
 inv_grid = [["." for i in range(50)] for j in range(25)]
 
 pl_inv["inventory_grid"] = inv_grid
